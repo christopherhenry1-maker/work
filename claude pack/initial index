@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Value Governance Dashboard</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
+
         * {
             margin: 0;
             padding: 0;
@@ -39,12 +41,18 @@
             --color-purple-600: #7c3aed;
             --color-yellow-100: #fef3c7;
             --color-yellow-700: #b45309;
-            --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            --font-sans: "Manrope", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            --font-display: "Space Grotesk", "Manrope", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+            --shadow-soft: 0 8px 20px rgba(15, 23, 42, 0.08);
+            --shadow-elevated: 0 18px 45px rgba(15, 23, 42, 0.14);
+            --glass: rgba(255, 255, 255, 0.7);
         }
 
         body {
             font-family: var(--font-sans);
-            background-color: var(--color-slate-100);
+            background: radial-gradient(circle at top right, rgba(185, 28, 28, 0.08), transparent 35%),
+                        radial-gradient(circle at 20% 20%, rgba(37, 99, 235, 0.06), transparent 35%),
+                        var(--color-slate-100);
             color: var(--color-slate-900);
             line-height: 1.5;
             overflow: hidden;
@@ -75,15 +83,20 @@
             100% { transform: translateX(-100%); }
         }
 
+        @keyframes rise-in {
+            0% { opacity: 0; transform: translateY(8px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
         /* Top Navigation */
         .top-nav {
-            background-color: var(--color-slate-800);
+            background: linear-gradient(135deg, #0f172a 0%, #111827 55%, #1f2937 100%);
             color: white;
             padding: 1rem;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: var(--shadow-soft);
             position: relative;
             z-index: 50;
         }
@@ -114,7 +127,8 @@
         }
 
         .logo-title {
-            font-size: 1.25rem;
+            font-family: var(--font-display);
+            font-size: 1.35rem;
             font-weight: 700;
             letter-spacing: -0.025em;
         }
@@ -155,7 +169,7 @@
             cursor: pointer;
             border-radius: 0.5rem;
             font-size: 0.875rem;
-            font-weight: 500;
+            font-weight: 600;
             transition: all 0.2s;
         }
 
@@ -165,7 +179,7 @@
         }
 
         .page-tab.active {
-            background-color: var(--color-red-700);
+            background: linear-gradient(120deg, var(--color-red-700), var(--color-red-600));
             color: white;
         }
 
@@ -246,12 +260,13 @@
         /* Sidebar */
         .sidebar {
             width: 280px;
-            background-color: white;
-            border-right: 1px solid var(--color-slate-200);
+            background: var(--glass);
+            border-right: 1px solid rgba(226, 232, 240, 0.8);
             display: flex;
             flex-direction: column;
             overflow-y: auto;
             transition: transform 0.3s ease;
+            backdrop-filter: blur(14px);
         }
 
         .sidebar-hidden {
@@ -337,7 +352,7 @@
         }
         
         .schedule-day.past {
-            opacity: 0.4;
+            opacity: 0.55;
         }
         
         .schedule-day.past .schedule-header {
@@ -503,7 +518,7 @@
         .main-content {
             flex: 1;
             overflow: hidden;
-            background-color: var(--color-slate-100);
+            background-color: transparent;
             position: relative;
         }
 
@@ -512,6 +527,7 @@
             inset: 0;
             overflow-y: auto;
             padding: 1.5rem 2rem;
+            background: linear-gradient(180deg, rgba(248, 250, 252, 0.9) 0%, rgba(248, 250, 252, 0.6) 100%);
         }
 
         .content-container {
@@ -533,11 +549,18 @@
         }
 
         .section-title {
-            font-size: 0.875rem;
-            font-weight: 600;
-            color: var(--color-slate-500);
+            font-family: var(--font-display);
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--color-slate-700);
             letter-spacing: 0.05em;
             text-transform: uppercase;
+        }
+
+        .section-title.overview-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
         }
 
         /* Cards */
@@ -545,9 +568,10 @@
             background-color: white;
             border: 1px solid var(--color-slate-200);
             border-radius: 0.75rem;
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            box-shadow: var(--shadow-soft);
             padding: 1.5rem;
             margin-bottom: 1.5rem;
+            animation: rise-in 0.35s ease both;
         }
 
         .card-header {
@@ -558,7 +582,8 @@
         }
 
         .card-title {
-            font-size: 1.125rem;
+            font-family: var(--font-display);
+            font-size: 1.25rem;
             font-weight: 700;
             color: var(--color-slate-900);
             display: flex;
@@ -615,6 +640,14 @@
             background: rgba(255, 255, 255, 0.2);
         }
 
+        .table-wrapper {
+            background: white;
+            border-radius: 0.75rem;
+            border: 1px solid var(--color-slate-200);
+            box-shadow: var(--shadow-soft);
+            overflow: hidden;
+        }
+
         /* Deliverables Table */
         .deliverables-table {
             width: 100%;
@@ -627,19 +660,22 @@
         }
 
         .deliverables-table th {
-            padding: 0.25rem 0.5rem;
+            padding: 0.6rem 0.75rem;
             text-align: left;
-            font-size: 0.4rem;
-            font-weight: 700;
-            color: var(--color-slate-600);
+            font-size: 0.6rem;
+            font-weight: 800;
+            color: var(--color-slate-700);
             text-transform: uppercase;
-            letter-spacing: 0.05em;
-            border-bottom: 2px solid var(--color-slate-200);
+            letter-spacing: 0.1em;
+            border-bottom: 1px solid var(--color-slate-200);
+            position: sticky;
+            top: 0;
+            z-index: 2;
         }
 
         .deliverables-table td {
-            padding: 0.375rem 0.5rem;
-            font-size: 0.875rem;
+            padding: 0.6rem 0.75rem;
+            font-size: 0.85rem;
             border-bottom: 1px solid var(--color-slate-100);
             line-height: 1.2;
             vertical-align: middle;
@@ -651,7 +687,11 @@
         }
 
         .deliverables-table tbody tr:hover {
-            background-color: var(--color-slate-50);
+            background-color: rgba(248, 250, 252, 0.8);
+        }
+
+        .deliverables-table tbody tr:nth-child(even) {
+            background-color: #fbfcfe;
         }
 
         .hot-indicator {
@@ -682,6 +722,7 @@
             font-size: 0.75rem;
             font-weight: 600;
             border-radius: 0.375rem;
+            box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.05);
         }
 
         .remaining-badge.critical {
@@ -762,10 +803,11 @@
             cursor: pointer;
             transition: all 0.2s;
             line-height: 1.2;
+            box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
         }
 
         .schedule-item:hover {
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 20px rgba(15, 23, 42, 0.12);
             transform: translateY(-1px);
         }
 
@@ -873,18 +915,19 @@
             justify-content: center;
             gap: 0.5rem;
             padding: 0.5rem 1rem;
-            background-color: var(--color-red-700);
+            background: linear-gradient(135deg, var(--color-red-700), var(--color-red-600));
             color: white;
             border: none;
             border-radius: 0.5rem;
             font-weight: 700;
             font-size: 0.875rem;
             cursor: pointer;
-            transition: background-color 0.2s;
+            transition: transform 0.2s, box-shadow 0.2s;
         }
 
         .btn-primary:hover {
-            background-color: var(--color-red-800);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-soft);
         }
 
         .btn-secondary {
@@ -893,7 +936,7 @@
             justify-content: center;
             gap: 0.5rem;
             padding: 0.5rem 1rem;
-            background-color: white;
+            background-color: rgba(255, 255, 255, 0.9);
             color: var(--color-slate-700);
             border: 1px solid var(--color-slate-300);
             border-radius: 0.5rem;
@@ -904,8 +947,9 @@
         }
 
         .btn-secondary:hover {
-            background-color: var(--color-slate-50);
-            border-color: var(--color-slate-400);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-soft);
+            border-color: var(--color-slate-300);
         }
 
         .btn-icon-delete {
@@ -1232,6 +1276,116 @@
 
         .meetings-view.hidden {
             display: none;
+        }
+
+        /* Documents Page */
+        .documents-page {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .docs-hero {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            border: 1px solid var(--color-slate-200);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1.5rem;
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+        }
+
+        .docs-hero-title {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: var(--color-slate-900);
+            letter-spacing: 0.02em;
+        }
+
+        .docs-hero-subtitle {
+            font-size: 0.85rem;
+            color: var(--color-slate-600);
+            margin-top: 0.35rem;
+            max-width: 560px;
+        }
+
+        .docs-hero-badge {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--color-red-700);
+            background: var(--color-red-50);
+            border: 1px solid var(--color-red-100);
+            padding: 0.4rem 0.6rem;
+            border-radius: 999px;
+            white-space: nowrap;
+        }
+
+        .docs-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 1.5rem;
+        }
+
+        .docs-card {
+            background: white;
+            border: 1px solid var(--color-slate-200);
+            border-radius: 0.75rem;
+            box-shadow: 0 6px 16px rgba(15, 23, 42, 0.05);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 240px;
+        }
+
+        .docs-card-header {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--color-slate-200);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            background: var(--color-slate-50);
+        }
+
+        .docs-card-title {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: var(--color-slate-900);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .docs-card-title svg {
+            color: var(--color-red-600);
+        }
+
+        .docs-card-body {
+            padding: 1rem 1.25rem 1.25rem;
+        }
+
+        .docs-card-body .table-wrapper {
+            margin: 0;
+        }
+
+        .docs-card-body .deliverables-table th {
+            font-size: 0.6rem;
+        }
+
+        .docs-card-body .deliverables-table td {
+            font-size: 0.8rem;
+        }
+
+        @media (max-width: 1100px) {
+            .docs-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         /* Calendar Grid for Month View */
@@ -2163,7 +2317,7 @@
                     <!-- Overview Page -->
                     <div id="overviewPage" class="page-content">
                         <div class="section-header">
-                            <h2 class="section-title">DASHBOARD CONTEXT</h2>
+                            <h2 class="section-title overview-title">DASHBOARD CONTEXT</h2>
                         </div>
                         
                         <!-- Deliverables Section -->
@@ -2220,91 +2374,85 @@
 
                     <!-- Documents Page -->
                     <div id="documentsPage" class="page-content hidden">
-                        <div class="section-header">
-                            <h2 class="section-title">DOCUMENTS & RESOURCES</h2>
-                        </div>
-
-                        <div class="sidebar-accordion" style="margin-bottom: 1rem;">
-                            <button class="accordion-header open" onclick="toggleAccordion(this)">
-                                <span class="accordion-title">
-                                    <svg class="icon-xs accordion-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                    </svg>
-                                    Admin & Settings
-                                </span>
-                                <svg class="icon-xs accordion-icon chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                                </svg>
-                            </button>
-                            <div class="accordion-content open" id="documentsAdmin">
-                                <div class="loading-message">Loading...</div>
-                            </div>
-                        </div>
-
-                        <div class="sidebar-accordion" style="margin-bottom: 1.5rem;">
-                            <button class="accordion-header open" onclick="toggleAccordion(this)">
-                                <span class="accordion-title">
-                                    <svg class="icon-xs accordion-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                                    </svg>
-                                    KPIs & Performance
-                                </span>
-                                <svg class="icon-xs accordion-icon chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                                </svg>
-                            </button>
-                            <div class="accordion-content open" id="documentsKPIs">
-                                <div class="loading-message">Loading...</div>
-                            </div>
-                        </div>
-
-                        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem;">
-                            <div class="sidebar-accordion">
-                                <button class="accordion-header open" onclick="toggleAccordion(this)">
-                                    <span class="accordion-title">
-                                        <svg class="icon-xs accordion-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-                                        </svg>
-                                        Executive Updates
-                                    </span>
-                                    <svg class="icon-xs accordion-icon chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                                    </svg>
-                                </button>
-                                <div class="accordion-content open" id="documentsExecUpdates">
-                                    <div class="loading-message">Loading...</div>
+                        <div class="documents-page">
+                            <div class="docs-hero">
+                                <div>
+                                    <div class="docs-hero-title">Documents & Resources</div>
+                                    <div class="docs-hero-subtitle">Centralized access to executive assets, KPIs, updates, and reference materials. All links open in a new tab for quick retrieval.</div>
                                 </div>
+                                <div class="docs-hero-badge">Executive Library</div>
                             </div>
 
-                            <div class="sidebar-accordion">
-                                <button class="accordion-header open" onclick="toggleAccordion(this)">
-                                    <span class="accordion-title">
-                                        <svg class="icon-xs accordion-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                                        </svg>
-                                        Document Repository
-                                    </span>
-                                    <svg class="icon-xs accordion-icon chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                                    </svg>
-                                </button>
-                                <div class="accordion-content open">
-                                    <div class="table-wrapper">
-                                        <table class="deliverables-table">
-                                            <thead>
-                                                <tr>
-                                                    <th style="width: 35%;">DESCRIPTION</th>
-                                                    <th style="width: 20%;">OWNER</th>
-                                                    <th style="width: 30%;">LINK TO MATERIALS</th>
-                                                    <th style="width: 15%;">COMMENTS</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="documentsRepository">
-                                                <tr><td colspan="4" class="loading-message">Loading...</td></tr>
-                                            </tbody>
-                                        </table>
+                            <div class="docs-grid">
+                                <section class="docs-card">
+                                    <div class="docs-card-header">
+                                        <div class="docs-card-title">
+                                            <svg class="icon-xs" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                            </svg>
+                                            Admin & Settings
+                                        </div>
                                     </div>
-                                </div>
+                                    <div class="docs-card-body" id="documentsAdmin">
+                                        <div class="loading-message">Loading...</div>
+                                    </div>
+                                </section>
+
+                                <section class="docs-card">
+                                    <div class="docs-card-header">
+                                        <div class="docs-card-title">
+                                            <svg class="icon-xs" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                            </svg>
+                                            KPIs & Performance
+                                        </div>
+                                    </div>
+                                    <div class="docs-card-body" id="documentsKPIs">
+                                        <div class="loading-message">Loading...</div>
+                                    </div>
+                                </section>
+
+                                <section class="docs-card">
+                                    <div class="docs-card-header">
+                                        <div class="docs-card-title">
+                                            <svg class="icon-xs" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                                            </svg>
+                                            Executive Updates
+                                        </div>
+                                    </div>
+                                    <div class="docs-card-body" id="documentsExecUpdates">
+                                        <div class="loading-message">Loading...</div>
+                                    </div>
+                                </section>
+
+                                <section class="docs-card" style="grid-column: span 2;">
+                                    <div class="docs-card-header">
+                                        <div class="docs-card-title">
+                                            <svg class="icon-xs" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                                            </svg>
+                                            Document Repository
+                                        </div>
+                                    </div>
+                                    <div class="docs-card-body">
+                                        <div class="table-wrapper">
+                                            <table class="deliverables-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th style="width: 35%;">Description</th>
+                                                        <th style="width: 20%;">Owner</th>
+                                                        <th style="width: 30%;">Link to Materials</th>
+                                                        <th style="width: 15%;">Comments</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="documentsRepository">
+                                                    <tr><td colspan="4" class="loading-message">Loading...</td></tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </section>
                             </div>
                         </div>
                     </div>
@@ -2939,8 +3087,8 @@ function renderScheduleGrid(dates, meetingsByDate, weekLabel, showExport) {
                     dayMeetings.sort((a, b) => timeToMinutes(a.time24 || a.time) - timeToMinutes(b.time24 || b.time));
 
                     return `
-                        <div class="schedule-day${new Date(date + 'T00:00:00') < new Date(new Date().setHours(0,0,0,0)) ? ' past' : ''}" style="background: white; border: 1px solid var(--color-slate-200); border-radius: 0; overflow: hidden; display: flex; flex-direction: column; min-height: 300px;">
-                            <div style="padding: 0.5rem; text-align: center; ${isToday ? 'background-color: var(--color-red-700); color: white;' : 'background-color: var(--color-slate-50); color: var(--color-slate-600);'}">
+                        <div class="schedule-day${new Date(date + 'T00:00:00') < new Date(new Date().setHours(0,0,0,0)) ? ' past' : ''}" style="background: white; border: 1px solid var(--color-slate-200); border-radius: 0.75rem; overflow: hidden; display: flex; flex-direction: column; min-height: 300px; box-shadow: var(--shadow-soft);">
+                            <div style="padding: 0.6rem; text-align: center; border-bottom: 1px solid var(--color-slate-200); ${isToday ? 'background-color: var(--color-red-700); color: white;' : 'background-color: var(--color-slate-50); color: var(--color-slate-600);'}">
                                 <div style="font-size: 0.5rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">${dayName}</div>
                                 <div style="font-size: 1rem; font-weight: 800; margin-top: 0.15rem;">${dayNumber}</div>
                             </div>
