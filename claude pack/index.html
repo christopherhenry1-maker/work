@@ -1,0 +1,1563 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Value Governance Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --verizon-red: #cd040b;
+      --verizon-red-dark: #a00308;
+      --verizon-black: #000000;
+      --verizon-white: #ffffff;
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-300: #d1d5db;
+      --gray-400: #9ca3af;
+      --gray-500: #6b7280;
+      --gray-600: #4b5563;
+      --gray-700: #374151;
+      --gray-800: #1f2937;
+      --gray-900: #111827;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --info: #3b82f6;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--gray-100);
+      color: var(--gray-900);
+      min-height: 100vh;
+    }
+
+    /* Main Layout */
+    .dashboard-container {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Left Sidebar */
+    .sidebar {
+      width: 280px;
+      background: var(--verizon-black);
+      color: var(--verizon-white);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      height: 100vh;
+      overflow-y: auto;
+      z-index: 100;
+    }
+
+    .sidebar-header {
+      padding: 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .logo {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--verizon-red);
+      letter-spacing: -1px;
+    }
+
+    .logo-subtitle {
+      font-size: 11px;
+      color: var(--gray-400);
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .sidebar-nav {
+      padding: 20px 0;
+      flex: 1;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      padding: 12px 20px;
+      color: var(--gray-300);
+      cursor: pointer;
+      transition: all 0.2s;
+      border-left: 3px solid transparent;
+    }
+
+    .nav-item:hover {
+      background: rgba(255,255,255,0.05);
+      color: var(--verizon-white);
+    }
+
+    .nav-item.active {
+      background: rgba(205,4,11,0.1);
+      color: var(--verizon-red);
+      border-left-color: var(--verizon-red);
+    }
+
+    .nav-item i {
+      width: 20px;
+      margin-right: 12px;
+    }
+
+    .nav-section-title {
+      padding: 20px 20px 10px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--gray-500);
+    }
+
+    /* Deliverables in Sidebar */
+    .sidebar-deliverables {
+      padding: 0 12px 20px;
+    }
+
+    .sidebar-deliverable-item {
+      padding: 10px 12px;
+      border-radius: 6px;
+      margin-bottom: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+      border-left: 3px solid transparent;
+    }
+
+    .sidebar-deliverable-item:hover {
+      background: rgba(255,255,255,0.05);
+    }
+
+    .sidebar-deliverable-item.critical {
+      border-left-color: var(--danger);
+    }
+
+    .sidebar-deliverable-item.high {
+      border-left-color: var(--warning);
+    }
+
+    .sidebar-deliverable-item.medium {
+      border-left-color: var(--info);
+    }
+
+    .sidebar-deliverable-item .item-title {
+      font-size: 13px;
+      color: var(--gray-200);
+      margin-bottom: 4px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .sidebar-deliverable-item .item-meta {
+      font-size: 11px;
+      color: var(--gray-500);
+    }
+
+    .sidebar-deliverable-item .item-meta .days-badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+      margin-left: 6px;
+    }
+
+    .sidebar-deliverable-item .item-meta .days-badge.critical {
+      background: rgba(239,68,68,0.2);
+      color: #fca5a5;
+    }
+
+    .sidebar-deliverable-item .item-meta .days-badge.high {
+      background: rgba(245,158,11,0.2);
+      color: #fcd34d;
+    }
+
+    /* Main Content */
+    .main-content {
+      flex: 1;
+      margin-left: 280px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top Header */
+    .top-header {
+      background: var(--verizon-white);
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--gray-200);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .page-title {
+      font-size: 20px;
+      font-weight: 600;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: var(--verizon-red);
+      color: var(--verizon-white);
+    }
+
+    .btn-primary:hover {
+      background: var(--verizon-red-dark);
+    }
+
+    .btn-secondary {
+      background: var(--gray-100);
+      color: var(--gray-700);
+      border: 1px solid var(--gray-300);
+    }
+
+    .btn-secondary:hover {
+      background: var(--gray-200);
+    }
+
+    /* Content Area */
+    .content-area {
+      padding: 24px;
+      flex: 1;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--verizon-white);
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--gray-200);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .card-body {
+      padding: 20px;
+    }
+
+    /* Grid Layout */
+    .grid {
+      display: grid;
+      gap: 24px;
+    }
+
+    .grid-2 {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .grid-3 {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    /* Stats Cards */
+    .stat-card {
+      padding: 20px;
+      background: var(--verizon-white);
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .stat-value {
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--gray-900);
+    }
+
+    .stat-label {
+      font-size: 13px;
+      color: var(--gray-500);
+      margin-top: 4px;
+    }
+
+    .stat-trend {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      margin-top: 8px;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+
+    .stat-trend.up {
+      background: rgba(16,185,129,0.1);
+      color: var(--success);
+    }
+
+    .stat-trend.down {
+      background: rgba(239,68,68,0.1);
+      color: var(--danger);
+    }
+
+    /* Table Styles */
+    .table-container {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--gray-200);
+    }
+
+    th {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--gray-500);
+      background: var(--gray-50);
+    }
+
+    td {
+      font-size: 14px;
+    }
+
+    tr:hover {
+      background: var(--gray-50);
+    }
+
+    /* Status Badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .badge-critical {
+      background: rgba(239,68,68,0.1);
+      color: var(--danger);
+    }
+
+    .badge-high {
+      background: rgba(245,158,11,0.1);
+      color: var(--warning);
+    }
+
+    .badge-medium {
+      background: rgba(59,130,246,0.1);
+      color: var(--info);
+    }
+
+    .badge-low {
+      background: rgba(16,185,129,0.1);
+      color: var(--success);
+    }
+
+    .badge-text {
+      background: rgba(107,114,128,0.1);
+      color: var(--gray-600);
+    }
+
+    /* Loading State */
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 60px;
+      color: var(--gray-500);
+    }
+
+    .loading i {
+      animation: spin 1s linear infinite;
+      margin-right: 8px;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: var(--gray-500);
+    }
+
+    .empty-state i {
+      font-size: 48px;
+      margin-bottom: 16px;
+      color: var(--gray-300);
+    }
+
+    /* Schedule Grid */
+    .schedule-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 16px;
+    }
+
+    .schedule-day {
+      background: var(--gray-50);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .schedule-day-header {
+      background: var(--verizon-black);
+      color: var(--verizon-white);
+      padding: 12px;
+      text-align: center;
+    }
+
+    .schedule-day-header .day-name {
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .schedule-day-header .day-date {
+      font-size: 12px;
+      color: var(--gray-400);
+      margin-top: 2px;
+    }
+
+    .schedule-day-content {
+      padding: 12px;
+      min-height: 200px;
+    }
+
+    .schedule-meeting {
+      background: var(--verizon-white);
+      border-radius: 6px;
+      padding: 10px;
+      margin-bottom: 8px;
+      border-left: 3px solid var(--gray-300);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .schedule-meeting:hover {
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .schedule-meeting.hot-topic {
+      border-left-color: var(--verizon-red);
+    }
+
+    .schedule-meeting.prep-required {
+      border-left-color: var(--warning);
+    }
+
+    .schedule-meeting.has-conflict {
+      background: #fff3cd;
+      border-left-color: #ff6600;
+    }
+
+    .meeting-time {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--gray-500);
+    }
+
+    .meeting-title {
+      font-size: 13px;
+      font-weight: 500;
+      margin-top: 4px;
+      color: var(--gray-800);
+    }
+
+    .meeting-badges {
+      display: flex;
+      gap: 4px;
+      margin-top: 6px;
+      flex-wrap: wrap;
+    }
+
+    .meeting-badge {
+      font-size: 9px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    .meeting-badge.hot {
+      background: var(--verizon-red);
+      color: white;
+    }
+
+    .meeting-badge.prep {
+      background: var(--warning);
+      color: white;
+    }
+
+    .meeting-badge.conflict {
+      background: #ff6600;
+      color: white;
+    }
+
+    /* Week Tabs */
+    .week-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .week-tab {
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      background: var(--gray-100);
+      color: var(--gray-600);
+      border: none;
+      transition: all 0.2s;
+    }
+
+    .week-tab.active {
+      background: var(--verizon-red);
+      color: white;
+    }
+
+    /* Links Grid */
+    .links-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 12px;
+    }
+
+    .link-card {
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      background: var(--gray-50);
+      border-radius: 8px;
+      text-decoration: none;
+      color: var(--gray-700);
+      transition: all 0.2s;
+      border: 1px solid transparent;
+    }
+
+    .link-card:hover {
+      background: var(--verizon-white);
+      border-color: var(--gray-200);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .link-card i {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--verizon-red);
+      color: white;
+      border-radius: 6px;
+      margin-right: 12px;
+    }
+
+    .link-card span {
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid var(--gray-200);
+      margin-bottom: 20px;
+    }
+
+    .tab {
+      padding: 12px 20px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--gray-500);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .tab:hover {
+      color: var(--gray-700);
+    }
+
+    .tab.active {
+      color: var(--verizon-red);
+      border-bottom-color: var(--verizon-red);
+    }
+
+    /* Document Repository Section */
+    .doc-repo-section {
+      margin-top: 24px;
+    }
+
+    .doc-repo-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .doc-repo-item {
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      background: var(--gray-50);
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+
+    .doc-repo-item:hover {
+      background: var(--verizon-white);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .doc-repo-item i {
+      color: var(--verizon-red);
+      margin-right: 12px;
+    }
+
+    .doc-repo-item .doc-info {
+      flex: 1;
+    }
+
+    .doc-repo-item .doc-name {
+      font-weight: 500;
+      color: var(--gray-800);
+    }
+
+    .doc-repo-item .doc-meta {
+      font-size: 12px;
+      color: var(--gray-500);
+      margin-top: 2px;
+    }
+
+    .doc-repo-item .doc-link {
+      color: var(--verizon-red);
+      text-decoration: none;
+    }
+
+    .doc-repo-item .doc-link:hover {
+      text-decoration: underline;
+    }
+
+    /* PDF Export Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 800px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal-header {
+      padding: 20px;
+      border-bottom: 1px solid var(--gray-200);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-header h2 {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: var(--gray-500);
+    }
+
+    .modal-body {
+      padding: 20px;
+    }
+
+    .modal-footer {
+      padding: 16px 20px;
+      border-top: 1px solid var(--gray-200);
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+
+    /* Alert Banner */
+    .alert-banner {
+      background: var(--verizon-red);
+      color: white;
+      padding: 10px 20px;
+      font-size: 14px;
+      overflow: hidden;
+      display: none;
+    }
+
+    .alert-banner.active {
+      display: block;
+    }
+
+    .alert-banner .alert-text {
+      animation: scroll-left 20s linear infinite;
+      white-space: nowrap;
+    }
+
+    @keyframes scroll-left {
+      0% { transform: translateX(100%); }
+      100% { transform: translateX(-100%); }
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .sidebar {
+        width: 60px;
+      }
+      .sidebar-header, .nav-section-title, .sidebar-deliverables {
+        display: none;
+      }
+      .nav-item span {
+        display: none;
+      }
+      .nav-item {
+        justify-content: center;
+        padding: 16px;
+      }
+      .nav-item i {
+        margin-right: 0;
+      }
+      .main-content {
+        margin-left: 60px;
+      }
+      .schedule-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">verizon</div>
+        <div class="logo-subtitle">Value Governance</div>
+      </div>
+      
+      <nav class="sidebar-nav">
+        <div class="nav-item active" data-page="overview">
+          <i class="fas fa-home"></i>
+          <span>Overview</span>
+        </div>
+        <div class="nav-item" data-page="schedule">
+          <i class="fas fa-calendar-alt"></i>
+          <span>Schedule</span>
+        </div>
+        <div class="nav-item" data-page="deliverables">
+          <i class="fas fa-tasks"></i>
+          <span>Deliverables</span>
+        </div>
+        <div class="nav-item" data-page="documents">
+          <i class="fas fa-folder-open"></i>
+          <span>Documents</span>
+        </div>
+        <div class="nav-item" data-page="links">
+          <i class="fas fa-link"></i>
+          <span>Quick Links</span>
+        </div>
+        
+        <div class="nav-section-title">Upcoming Deadlines</div>
+        <div class="sidebar-deliverables" id="sidebar-deliverables">
+          <!-- Populated by JS -->
+        </div>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Alert Banner -->
+      <div class="alert-banner" id="alert-banner">
+        <div class="alert-text" id="alert-text"></div>
+      </div>
+
+      <!-- Top Header -->
+      <header class="top-header">
+        <h1 class="page-title" id="page-title">Overview</h1>
+        <div class="header-actions">
+          <button class="btn btn-secondary" onclick="refreshData()">
+            <i class="fas fa-sync-alt"></i> Refresh
+          </button>
+          <button class="btn btn-primary" onclick="openPDFExportModal()">
+            <i class="fas fa-file-pdf"></i> Export PDF
+          </button>
+        </div>
+      </header>
+
+      <!-- Content Area -->
+      <div class="content-area" id="content-area">
+        <!-- Content loaded dynamically -->
+      </div>
+    </main>
+  </div>
+
+  <!-- PDF Export Modal -->
+  <div class="modal" id="pdf-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Export Weekly Schedule PDF</h2>
+        <button class="modal-close" onclick="closePDFModal()">&times;</button>
+      </div>
+      <div class="modal-body" id="pdf-modal-body">
+        <!-- Populated by JS -->
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closePDFModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="generatePDF()">
+          <i class="fas fa-download"></i> Generate PDF
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Global data store
+    let dashboardData = {
+      exec1Deliverables: [],
+      exec2Deliverables: [],
+      meetings: [],
+      recurringMeetings: [],
+      adminLinks: [],
+      kpiLinks: [],
+      executiveUpdates: [],
+      documentRepository: [],
+      documentRepoLinks: [],
+      completedItems: [],
+      alerts: []
+    };
+
+    let currentPage = 'overview';
+    let currentWeek = 1;
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      loadDashboardData();
+      setupNavigation();
+    });
+
+    // Setup navigation
+    function setupNavigation() {
+      document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const page = item.dataset.page;
+          if (page) {
+            navigateTo(page);
+          }
+        });
+      });
+    }
+
+    // Navigate to page
+    function navigateTo(page) {
+      currentPage = page;
+      
+      // Update nav
+      document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.toggle('active', item.dataset.page === page);
+      });
+
+      // Update title
+      const titles = {
+        overview: 'Overview',
+        schedule: 'Meeting Schedule',
+        deliverables: 'Deliverables',
+        documents: 'Document Repository',
+        links: 'Quick Links'
+      };
+      document.getElementById('page-title').textContent = titles[page] || 'Dashboard';
+
+      // Render page
+      renderPage(page);
+    }
+
+    // Load dashboard data
+    function loadDashboardData() {
+      showLoading();
+      
+      google.script.run
+        .withSuccessHandler(data => {
+          dashboardData = data;
+          renderSidebarDeliverables();
+          renderPage(currentPage);
+          loadAlerts();
+        })
+        .withFailureHandler(error => {
+          console.error('Error loading data:', error);
+          showError('Failed to load dashboard data');
+        })
+        .getAllDashboardData();
+    }
+
+    // Refresh data
+    function refreshData() {
+      loadDashboardData();
+    }
+
+    // Load alerts
+    function loadAlerts() {
+      google.script.run
+        .withSuccessHandler(alerts => {
+          if (alerts && alerts.length > 0) {
+            document.getElementById('alert-text').textContent = alerts.join(' • ');
+            document.getElementById('alert-banner').classList.add('active');
+          }
+        })
+        .getAlerts();
+    }
+
+    // Show loading
+    function showLoading() {
+      document.getElementById('content-area').innerHTML = `
+        <div class="loading">
+          <i class="fas fa-spinner"></i> Loading...
+        </div>
+      `;
+    }
+
+    // Show error
+    function showError(message) {
+      document.getElementById('content-area').innerHTML = `
+        <div class="empty-state">
+          <i class="fas fa-exclamation-triangle"></i>
+          <p>${message}</p>
+        </div>
+      `;
+    }
+
+    // Render sidebar deliverables
+    function renderSidebarDeliverables() {
+      const container = document.getElementById('sidebar-deliverables');
+      const allDeliverables = [...dashboardData.exec1Deliverables, ...dashboardData.exec2Deliverables];
+      
+      // Sort by urgency and filter to upcoming
+      const upcoming = allDeliverables
+        .filter(d => d.daysRemaining !== null && d.daysRemaining <= 14)
+        .sort((a, b) => (a.daysRemaining || 999) - (b.daysRemaining || 999))
+        .slice(0, 5);
+
+      if (upcoming.length === 0) {
+        container.innerHTML = '<div style="padding: 12px; color: var(--gray-500); font-size: 13px;">No upcoming deadlines</div>';
+        return;
+      }
+
+      container.innerHTML = upcoming.map(d => {
+        // FIX: Only show date if ETA exists and daysRemaining is numeric
+        const hasValidEta = d.eta && d.daysRemaining !== null && typeof d.daysRemaining === 'number';
+        const etaDisplay = hasValidEta ? `<span class="item-meta">${d.eta}</span>` : '';
+        const daysBadge = hasValidEta ? 
+          `<span class="days-badge ${d.urgency}">${Math.abs(d.daysRemaining)}d ${d.daysRemaining < 0 ? 'overdue' : 'left'}</span>` : '';
+        
+        return `
+          <div class="sidebar-deliverable-item ${d.urgency}" onclick="navigateTo('deliverables')">
+            <div class="item-title">${escapeHtml(d.description)}</div>
+            <div class="item-meta">
+              ${etaDisplay}
+              ${daysBadge}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Render page
+    function renderPage(page) {
+      switch(page) {
+        case 'overview':
+          renderOverview();
+          break;
+        case 'schedule':
+          renderSchedule();
+          break;
+        case 'deliverables':
+          renderDeliverables();
+          break;
+        case 'documents':
+          renderDocuments();
+          break;
+        case 'links':
+          renderLinks();
+          break;
+        default:
+          renderOverview();
+      }
+    }
+
+    // Render Overview
+    function renderOverview() {
+      const allDeliverables = [...dashboardData.exec1Deliverables, ...dashboardData.exec2Deliverables];
+      const criticalItems = allDeliverables.filter(d => d.urgency === 'critical' || d.urgency === 'overdue').length;
+      const upcomingMeetings = dashboardData.meetings.filter(m => m.weekNumber === 1).length;
+      const hotTopics = dashboardData.meetings.filter(m => m.isHotTopic).length;
+      const documentCount = dashboardData.documentRepoLinks.length;
+
+      document.getElementById('content-area').innerHTML = `
+        <div class="grid grid-3" style="margin-bottom: 24px;">
+          <div class="stat-card">
+            <div class="stat-value" style="color: ${criticalItems > 0 ? 'var(--danger)' : 'var(--success)'}">
+              ${criticalItems}
+            </div>
+            <div class="stat-label">Critical/Overdue Items</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">${upcomingMeetings}</div>
+            <div class="stat-label">Meetings This Week</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" style="color: ${hotTopics > 0 ? 'var(--verizon-red)' : 'inherit'}">
+              ${hotTopics}
+            </div>
+            <div class="stat-label">Hot Topics</div>
+          </div>
+        </div>
+
+        <div class="grid grid-2">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Upcoming Deliverables</h3>
+              <button class="btn btn-secondary" onclick="navigateTo('deliverables')">View All</button>
+            </div>
+            <div class="card-body">
+              ${renderDeliverablesList(allDeliverables.slice(0, 5))}
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Today's Meetings</h3>
+              <button class="btn btn-secondary" onclick="navigateTo('schedule')">View Schedule</button>
+            </div>
+            <div class="card-body">
+              ${renderTodaysMeetings()}
+            </div>
+          </div>
+        </div>
+
+        <!-- Document Repository Section on Overview -->
+        <div class="card doc-repo-section">
+          <div class="card-header">
+            <h3 class="card-title">Document Repository</h3>
+            <button class="btn btn-secondary" onclick="navigateTo('documents')">View All</button>
+          </div>
+          <div class="card-body">
+            ${renderDocumentRepoList(dashboardData.documentRepoLinks.slice(0, 5))}
+          </div>
+        </div>
+      `;
+    }
+
+    // Render Document Repository List (for overview and documents page)
+    function renderDocumentRepoList(documents) {
+      if (!documents || documents.length === 0) {
+        return '<div class="empty-state"><p>No documents available</p></div>';
+      }
+
+      return `
+        <div class="doc-repo-list">
+          ${documents.map(doc => `
+            <div class="doc-repo-item">
+              <i class="fas fa-file-alt"></i>
+              <div class="doc-info">
+                <div class="doc-name">${escapeHtml(doc.description || doc.name)}</div>
+                <div class="doc-meta">
+                  ${doc.owner ? `Owner: ${escapeHtml(doc.owner)}` : ''}
+                  ${doc.comment ? ` • ${escapeHtml(doc.comment)}` : ''}
+                </div>
+              </div>
+              ${doc.url || doc.link ? `
+                <a href="${doc.url || doc.link}" target="_blank" class="doc-link">
+                  <i class="fas fa-external-link-alt"></i> Open
+                </a>
+              ` : ''}
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    // Render deliverables list
+    function renderDeliverablesList(deliverables) {
+      if (!deliverables || deliverables.length === 0) {
+        return '<div class="empty-state"><p>No deliverables</p></div>';
+      }
+
+      return `
+        <table>
+          <thead>
+            <tr>
+              <th>Description</th>
+              <th>ETA</th>
+              <th>Days Left</th>
+              <th>Owner</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${deliverables.map(d => {
+              // FIX: Handle text-based daysLeft values
+              let daysLeftDisplay = '';
+              if (d.daysRemainingText && typeof d.daysRemainingText === 'string' && !d.daysRemainingText.match(/^\d+d$/)) {
+                // It's text like "weekly", "monthly" - display as-is with neutral badge
+                daysLeftDisplay = `<span class="badge badge-text">${escapeHtml(d.daysRemainingText)}</span>`;
+              } else if (d.daysRemaining !== null && typeof d.daysRemaining === 'number') {
+                // It's numeric - display with urgency badge
+                daysLeftDisplay = `<span class="badge badge-${d.urgency}">${Math.abs(d.daysRemaining)}d ${d.daysRemaining < 0 ? 'overdue' : ''}</span>`;
+              }
+              
+              return `
+                <tr>
+                  <td>${escapeHtml(d.description)}</td>
+                  <td>${d.eta || '-'}</td>
+                  <td>${daysLeftDisplay}</td>
+                  <td>${escapeHtml(d.owner) || '-'}</td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    // Render today's meetings
+    function renderTodaysMeetings() {
+      const today = new Date().toISOString().split('T')[0];
+      const todaysMeetings = dashboardData.meetings.filter(m => m.date === today);
+
+      if (todaysMeetings.length === 0) {
+        return '<div class="empty-state"><i class="fas fa-calendar-check"></i><p>No meetings today</p></div>';
+      }
+
+      return todaysMeetings.map(m => `
+        <div class="schedule-meeting ${m.isHotTopic ? 'hot-topic' : ''} ${m.prepRequired ? 'prep-required' : ''}">
+          <div class="meeting-time">${m.time || 'TBD'}</div>
+          <div class="meeting-title">${escapeHtml(m.title)}</div>
+          <div class="meeting-badges">
+            ${m.isHotTopic ? '<span class="meeting-badge hot">HOT</span>' : ''}
+            ${m.prepRequired ? '<span class="meeting-badge prep">PREP</span>' : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Render Schedule
+    function renderSchedule() {
+      const weekMeetings = dashboardData.meetings.filter(m => m.weekNumber === currentWeek);
+      
+      // Get week dates
+      const today = new Date();
+      const currentDay = today.getDay();
+      const diff = currentDay === 0 ? -6 : 1 - currentDay;
+      const monday = new Date(today);
+      monday.setDate(today.getDate() + diff);
+      
+      if (currentWeek === 2) {
+        monday.setDate(monday.getDate() + 7);
+      }
+
+      const days = [];
+      for (let i = 0; i < 5; i++) {
+        const date = new Date(monday);
+        date.setDate(monday.getDate() + i);
+        days.push({
+          name: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'][i],
+          date: date.toISOString().split('T')[0],
+          dateFormatted: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        });
+      }
+
+      document.getElementById('content-area').innerHTML = `
+        <div class="week-tabs">
+          <button class="week-tab ${currentWeek === 1 ? 'active' : ''}" onclick="switchWeek(1)">This Week</button>
+          <button class="week-tab ${currentWeek === 2 ? 'active' : ''}" onclick="switchWeek(2)">Next Week</button>
+        </div>
+
+        <div class="schedule-grid">
+          ${days.map(day => {
+            const dayMeetings = weekMeetings
+              .filter(m => m.date === day.date)
+              .sort((a, b) => (a.time24 || '').localeCompare(b.time24 || ''));
+            
+            return `
+              <div class="schedule-day">
+                <div class="schedule-day-header">
+                  <div class="day-name">${day.name}</div>
+                  <div class="day-date">${day.dateFormatted}</div>
+                </div>
+                <div class="schedule-day-content">
+                  ${dayMeetings.length === 0 ? 
+                    '<div style="color: var(--gray-400); font-size: 13px; text-align: center; padding: 20px;">No meetings</div>' :
+                    dayMeetings.map(m => `
+                      <div class="schedule-meeting ${m.isHotTopic ? 'hot-topic' : ''} ${m.prepRequired ? 'prep-required' : ''} ${m.hasConflict ? 'has-conflict' : ''}">
+                        <div class="meeting-time">${m.time || 'TBD'}</div>
+                        <div class="meeting-title">${escapeHtml(m.title)}</div>
+                        <div class="meeting-badges">
+                          ${m.isHotTopic ? '<span class="meeting-badge hot">HOT</span>' : ''}
+                          ${m.prepRequired ? '<span class="meeting-badge prep">PREP</span>' : ''}
+                          ${m.hasConflict ? '<span class="meeting-badge conflict">CONFLICT</span>' : ''}
+                        </div>
+                      </div>
+                    `).join('')
+                  }
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+
+    // Switch week
+    function switchWeek(week) {
+      currentWeek = week;
+      renderSchedule();
+    }
+
+    // Render Deliverables
+    function renderDeliverables() {
+      document.getElementById('content-area').innerHTML = `
+        <div class="tabs">
+          <div class="tab active" data-tab="exec1">VP Deliverables</div>
+          <div class="tab" data-tab="exec2">Governance Deliverables</div>
+          <div class="tab" data-tab="completed">Completed</div>
+        </div>
+        <div id="deliverables-content">
+          ${renderDeliverablesTable(dashboardData.exec1Deliverables)}
+        </div>
+      `;
+
+      // Setup tab switching
+      document.querySelectorAll('.tabs .tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          
+          const tabName = tab.dataset.tab;
+          let data = [];
+          if (tabName === 'exec1') data = dashboardData.exec1Deliverables;
+          else if (tabName === 'exec2') data = dashboardData.exec2Deliverables;
+          else if (tabName === 'completed') data = dashboardData.completedItems;
+          
+          document.getElementById('deliverables-content').innerHTML = renderDeliverablesTable(data);
+        });
+      });
+    }
+
+    // Render deliverables table
+    function renderDeliverablesTable(deliverables) {
+      if (!deliverables || deliverables.length === 0) {
+        return '<div class="empty-state"><i class="fas fa-check-circle"></i><p>No items</p></div>';
+      }
+
+      return `
+        <div class="card">
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Description</th>
+                  <th>ETA</th>
+                  <th>Days Left</th>
+                  <th>Owner</th>
+                  <th>Link</th>
+                  <th>Comments</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${deliverables.map(d => {
+                  // FIX: Handle text-based daysLeft values (like "weekly", "monthly")
+                  let daysLeftDisplay = '';
+                  const rawDaysLeft = d.daysLeft || d.daysRemainingText || '';
+                  
+                  // Check if it's a text value (not numeric)
+                  if (typeof rawDaysLeft === 'string' && rawDaysLeft && !rawDaysLeft.match(/^-?\d+d?$/)) {
+                    // Text value like "weekly", "monthly" - display as-is
+                    daysLeftDisplay = `<span class="badge badge-text">${escapeHtml(rawDaysLeft)}</span>`;
+                  } else if (d.daysRemaining !== null && d.daysRemaining !== undefined && typeof d.daysRemaining === 'number') {
+                    // Numeric value - calculate and display with urgency
+                    daysLeftDisplay = `<span class="badge badge-${d.urgency}">${Math.abs(d.daysRemaining)}d ${d.daysRemaining < 0 ? 'overdue' : ''}</span>`;
+                  }
+                  
+                  return `
+                    <tr>
+                      <td>${escapeHtml(d.description)}</td>
+                      <td>${d.eta || '-'}</td>
+                      <td>${daysLeftDisplay}</td>
+                      <td>${escapeHtml(d.owner) || '-'}</td>
+                      <td>
+                        ${d.linkedMaterials || d.link ? 
+                          `<a href="${d.linkedMaterials || d.link}" target="_blank" class="btn btn-secondary" style="padding: 4px 8px; font-size: 12px;">
+                            <i class="fas fa-external-link-alt"></i>
+                          </a>` : '-'}
+                      </td>
+                      <td>${escapeHtml(d.comment) || '-'}</td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    // Render Documents page with correct columns: Description, Owner, Link to Materials, Comments
+    function renderDocuments() {
+      const documents = dashboardData.documentRepoLinks || [];
+      
+      document.getElementById('content-area').innerHTML = `
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Document Repository</h3>
+            <span style="color: var(--gray-500); font-size: 14px;">${documents.length} documents</span>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Description</th>
+                  <th>Owner</th>
+                  <th>Link to Materials</th>
+                  <th>Comments</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${documents.length === 0 ? 
+                  `<tr><td colspan="4" style="text-align: center; padding: 40px; color: var(--gray-500);">
+                    <i class="fas fa-folder-open" style="font-size: 32px; margin-bottom: 12px; display: block;"></i>
+                    No documents in repository
+                  </td></tr>` :
+                  documents.map(doc => `
+                    <tr>
+                      <td>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                          <i class="fas fa-file-alt" style="color: var(--verizon-red);"></i>
+                          <span>${escapeHtml(doc.description || doc.name)}</span>
+                        </div>
+                      </td>
+                      <td>${escapeHtml(doc.owner) || '-'}</td>
+                      <td>
+                        ${doc.url || doc.link ? 
+                          `<a href="${doc.url || doc.link}" target="_blank" class="btn btn-secondary" style="padding: 4px 12px; font-size: 12px;">
+                            <i class="fas fa-external-link-alt"></i> Open
+                          </a>` : 
+                          '<span style="color: var(--gray-400);">No link</span>'}
+                      </td>
+                      <td>${escapeHtml(doc.comment) || '-'}</td>
+                    </tr>
+                  `).join('')
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    // Render Links
+    function renderLinks() {
+      document.getElementById('content-area').innerHTML = `
+        <div class="grid grid-2">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Admin & Settings</h3>
+            </div>
+            <div class="card-body">
+              <div class="links-grid">
+                ${dashboardData.adminLinks.map(link => `
+                  <a href="${link.url}" target="_blank" class="link-card">
+                    <i class="fas fa-cog"></i>
+                    <span>${escapeHtml(link.name)}</span>
+                  </a>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">KPIs & Dashboards</h3>
+            </div>
+            <div class="card-body">
+              <div class="links-grid">
+                ${dashboardData.kpiLinks.map(link => `
+                  <a href="${link.url}" target="_blank" class="link-card">
+                    <i class="fas fa-chart-line"></i>
+                    <span>${escapeHtml(link.name)}</span>
+                  </a>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top: 24px;">
+          <div class="card-header">
+            <h3 class="card-title">Executive Updates Archive</h3>
+          </div>
+          <div class="card-body">
+            <div class="links-grid">
+              ${dashboardData.executiveUpdates.map(update => `
+                <a href="${update.url}" target="_blank" class="link-card">
+                  <i class="fas fa-file-alt"></i>
+                  <span>${escapeHtml(update.name)}</span>
+                </a>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // PDF Export Modal
+    function openPDFExportModal() {
+      const modal = document.getElementById('pdf-modal');
+      const body = document.getElementById('pdf-modal-body');
+      
+      body.innerHTML = `
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; margin-bottom: 8px; font-weight: 500;">Week Title</label>
+          <input type="text" id="pdf-title" class="form-control" value="The Current Week: A Funnel from Data to Decision" 
+            style="width: 100%; padding: 10px; border: 1px solid var(--gray-300); border-radius: 6px;">
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+          <label style="display: flex; align-items: center; gap: 8px;">
+            <input type="checkbox" id="pdf-prep" checked>
+            <span>Include prep meeting indicators</span>
+          </label>
+        </div>
+        
+        <div>
+          <label style="display: block; margin-bottom: 8px; font-weight: 500;">Select Meetings to Include</label>
+          <div style="max-height: 300px; overflow-y: auto; border: 1px solid var(--gray-200); border-radius: 6px; padding: 12px;">
+            ${dashboardData.meetings.map(m => `
+              <label style="display: flex; align-items: flex-start; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--gray-100);">
+                <input type="checkbox" class="meeting-checkbox" value="${m.id}" checked>
+                <div>
+                  <div style="font-weight: 500;">${escapeHtml(m.title)}</div>
+                  <div style="font-size: 12px; color: var(--gray-500);">
+                    ${m.dateFormatted} at ${m.time}
+                    ${m.hasConflict ? '<span style="color: #ff6600;"> ⚠ Conflict</span>' : ''}
+                  </div>
+                </div>
+              </label>
+            `).join('')}
+          </div>
+        </div>
+      `;
+      
+      modal.classList.add('active');
+    }
+
+    function closePDFModal() {
+      document.getElementById('pdf-modal').classList.remove('active');
+    }
+
+    function generatePDF() {
+      const title = document.getElementById('pdf-title').value;
+      const includePrepMeetings = document.getElementById('pdf-prep').checked;
+      const selectedMeetings = Array.from(document.querySelectorAll('.meeting-checkbox:checked')).map(cb => cb.value);
+      
+      // Show loading
+      document.getElementById('pdf-modal-body').innerHTML = `
+        <div class="loading">
+          <i class="fas fa-spinner"></i> Generating PDF...
+        </div>
+      `;
+      
+      google.script.run
+        .withSuccessHandler(result => {
+          if (result.success) {
+            window.open(result.downloadUrl, '_blank');
+            closePDFModal();
+          } else {
+            alert('Error generating PDF: ' + result.error);
+            openPDFExportModal();
+          }
+        })
+        .withFailureHandler(error => {
+          alert('Error: ' + error);
+          openPDFExportModal();
+        })
+        .generateWeeklySchedulePDF({
+          weekTitle: title,
+          includePrepMeetings: includePrepMeetings,
+          selectedMeetingIds: selectedMeetings
+        });
+    }
+
+    // Utility: Escape HTML
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>
