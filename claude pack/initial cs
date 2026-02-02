@@ -35,7 +35,7 @@ const CONFIG = {
   // Calendar Settings for Auto-Sync
   EXECUTIVE_CALENDAR_ID: 'michael.sarcone@verizon.com',
   SYNC_DAYS_AHEAD: 90,      // Pull meetings 90 days forward
-  SYNC_DAYS_BEHIND: 30,     // Pull meetings 30 days back
+  SYNC_DAYS_BEHIND: 0,      // Do not pull past meetings
   
   // Row ranges for Document Repository sheet
   // 
@@ -88,7 +88,8 @@ const CONFIG = {
     ATTENDEES: 10,       // K
     DELIVERABLE_LINK: 11,// L
     PREP_REQUIRED: 12,   // M
-    NOTES: 14,           // O (N is empty column)
+    COLOR_ID: 13,        // N (Event color or hot topic level)
+    NOTES: 14,           // O
     EVENT_ID: 15         // P
   }
 };
@@ -191,7 +192,7 @@ function initializeMeetingsSheet(sheet) {
   const headers = [
     'COMPLETE', 'APPROVED', 'HOT TOPIC', 'MEETING NAME', 'DATE', 'TIME',
     'DURATION', 'FREQUENCY', 'CATEGORY', 'DESCRIPTION', 'ATTENDEES',
-    'DELIVERABLE LINK', 'PREP REQUIRED', '', 'NOTES', 'EVENT ID'
+    'DELIVERABLE LINK', 'PREP REQUIRED', 'COLOR ID', 'NOTES', 'EVENT ID'
   ];
   
   sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
@@ -299,7 +300,8 @@ function syncCalendarToMeetingsSheet() {
   
   // Calculate date range
   const now = new Date();
-  const startDate = new Date(now.getTime() - (CONFIG.SYNC_DAYS_BEHIND * 24 * 60 * 60 * 1000));
+  const startDate = new Date(now);
+  startDate.setHours(0, 0, 0, 0);
   const endDate = new Date(now.getTime() + (CONFIG.SYNC_DAYS_AHEAD * 24 * 60 * 60 * 1000));
   
   Logger.log(`📅 Syncing from ${startDate.toDateString()} to ${endDate.toDateString()}`);
@@ -349,6 +351,9 @@ function syncCalendarToMeetingsSheet() {
     const endTime = event.getEndTime();
     const duration = Math.round((endTime - startTime) / (1000 * 60)); // minutes
     
+    // Skip past meetings (including earlier today)
+    if (startTime < now) continue;
+    
     // Skip 0-minute meetings
     if (duration <= 0) continue;
     
@@ -372,11 +377,16 @@ function syncCalendarToMeetingsSheet() {
     const meetingType = determineMeetingType(title);
     const frequency = determineFrequency(event, title);
     
+    // Determine hot topic based on color and keywords
+    const hotTopicMeta = getHotTopicMeta(event, title, cleanDescription);
+    const isAutoHotTopic = hotTopicMeta.isHotTopic === true;
+    const hotTopicValue = isAutoHotTopic || (existingRow ? existingRow[CONFIG.MEETING_COLUMNS.HOT_TOPIC] === true : false);
+    
     // Build row - preserve checkbox states if meeting exists
     const row = [
       existingRow ? existingRow[CONFIG.MEETING_COLUMNS.COMPLETE] : false,        // A: Complete
       existingRow ? existingRow[CONFIG.MEETING_COLUMNS.APPROVED] : false,        // B: Approved
-      existingRow ? existingRow[CONFIG.MEETING_COLUMNS.HOT_TOPIC] : false,       // C: Hot Topic
+      hotTopicValue,                                                             // C: Hot Topic
       title,                                                                       // D: Meeting Name
       startTime,                                                                   // E: Date
       Utilities.formatDate(startTime, Session.getScriptTimeZone(), 'HH:mm'),     // F: Time
@@ -387,7 +397,7 @@ function syncCalendarToMeetingsSheet() {
       attendees,                                                                   // K: Attendees
       existingRow ? existingRow[CONFIG.MEETING_COLUMNS.DELIVERABLE_LINK] : '',   // L: Deliverable Link
       existingRow ? existingRow[CONFIG.MEETING_COLUMNS.PREP_REQUIRED] : false,   // M: Prep Required
-      '',                                                                          // N: Empty column
+      hotTopicMeta.metaValue || '',                                               // N: Color ID / Hot Topic Level
       existingRow ? existingRow[CONFIG.MEETING_COLUMNS.NOTES] : '',              // O: Notes
       eventId                                                                      // P: Event ID
     ];
@@ -497,6 +507,45 @@ function shouldFilterMeeting(event, title) {
   // Rule for Attendees and Virtual Links has been removed.
   // All other events will now be synced to the sheet.
   return false;
+}
+
+function getEventColorIdSafe(event) {
+  try {
+    const color = event.getColor();
+    if (color === CalendarApp.EventColor.ORANGE) return '6';
+    if (color === CalendarApp.EventColor.RED) return '11';
+    if (color === CalendarApp.EventColor.YELLOW) return '5';
+    if (color === CalendarApp.EventColor.GREEN) return '10';
+    if (color === CalendarApp.EventColor.BLUE) return '9';
+    if (color === CalendarApp.EventColor.GRAY) return '8';
+    if (color === CalendarApp.EventColor.PURPLE) return '7';
+    if (color) return String(color);
+  } catch (e) {
+    Logger.log('Color lookup failed: ' + e);
+  }
+  return '';
+}
+
+function getHotTopicLevelFromText(title, description) {
+  const text = ((title || '') + ' ' + (description || '')).toLowerCase();
+  if (text.includes('urgent') || text.includes('critical')) return 'urgent';
+  if (text.includes('must attend') || text.includes('must-attend')) return 'must-attend';
+  return '';
+}
+
+function getHotTopicMeta(event, title, description) {
+  const colorId = getEventColorIdSafe(event);
+  let level = '';
+  if (colorId === '11') level = 'urgent';
+  if (colorId === '6') level = 'must-attend';
+  
+  if (!level) {
+    level = getHotTopicLevelFromText(title, description);
+  }
+  
+  const isHotTopic = level === 'urgent' || level === 'must-attend';
+  const metaValue = colorId ? colorId : (level || '');
+  return { isHotTopic: isHotTopic, level: level, metaValue: metaValue };
 }
 
 /**
@@ -1009,6 +1058,16 @@ function getMeetings() {
 
       if (meetingDate >= rangeStart && meetingDate <= rangeEnd) {
         const normalizedTime = normalizeMeetingTime(row[CONFIG.MEETING_COLUMNS.TIME]);
+        const colorMeta = row[CONFIG.MEETING_COLUMNS.COLOR_ID] ? String(row[CONFIG.MEETING_COLUMNS.COLOR_ID]).trim() : '';
+        const keywordLevel = getHotTopicLevelFromText(row[CONFIG.MEETING_COLUMNS.MEETING_NAME], row[CONFIG.MEETING_COLUMNS.DESCRIPTION]);
+        let hotTopicLevel = '';
+        if (colorMeta === '11') hotTopicLevel = 'urgent';
+        if (colorMeta === '6') hotTopicLevel = 'must-attend';
+        if (!hotTopicLevel && (colorMeta === 'urgent' || colorMeta === 'must-attend')) hotTopicLevel = colorMeta;
+        if (!hotTopicLevel && keywordLevel) hotTopicLevel = keywordLevel;
+        
+        const isHotTopic = row[CONFIG.MEETING_COLUMNS.HOT_TOPIC] === true || !!hotTopicLevel;
+        
         meetings.push({
           id: row[CONFIG.MEETING_COLUMNS.EVENT_ID] || 'meeting-' + i,
           title: row[CONFIG.MEETING_COLUMNS.MEETING_NAME] || '',
@@ -1020,7 +1079,8 @@ function getMeetings() {
           category: row[CONFIG.MEETING_COLUMNS.CATEGORY] || 'meeting',
           description: row[CONFIG.MEETING_COLUMNS.DESCRIPTION] || '',
           attendees: row[CONFIG.MEETING_COLUMNS.ATTENDEES] || '',
-          isHotTopic: row[CONFIG.MEETING_COLUMNS.HOT_TOPIC] === true,
+          isHotTopic: isHotTopic,
+          hotTopicLevel: hotTopicLevel,
           prepRequired: row[CONFIG.MEETING_COLUMNS.PREP_REQUIRED] === true,
           deliverableLink: row[CONFIG.MEETING_COLUMNS.DELIVERABLE_LINK] || '',
           notes: row[CONFIG.MEETING_COLUMNS.NOTES] || '',
