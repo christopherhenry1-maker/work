@@ -49,25 +49,25 @@ const CONFIG = {
   // ✅ You CAN move sections - just update START_ROW values below
   
   EXEC1_START_ROW: 3,          // Mike's/Sarcone's Deliverables (Skipping Title)
-  EXEC1_END_ROW: 20,
+  EXEC1_END_ROW: 13,
   
-  EXEC2_START_ROW: 23,         // DK's Governance Deliverables (Skipping Title)
-  EXEC2_END_ROW: 35,
+  EXEC2_START_ROW: 27,         // DK's Governance Deliverables (Skipping Title)
+  EXEC2_END_ROW: 37,
   
-  ADMIN_START_ROW: 38,         // Admin & Settings Links (Skipping Title)
-  ADMIN_END_ROW: 45,
+  ADMIN_START_ROW: 47,         // Admin & Settings Links (Skipping Title)
+  ADMIN_END_ROW: 52,
   
-  KPI_START_ROW: 49,           // KPIs & Performance (Skipping Title)
-  KPI_END_ROW: 60,
+  KPI_START_ROW: 57,           // KPIs & Performance (Skipping Title)
+  KPI_END_ROW: 68,
   
-  EXEC_UPDATES_START_ROW: 63,  // Executive Updates Archive (Skipping Title)
-  EXEC_UPDATES_END_ROW: 110,
+  EXEC_UPDATES_START_ROW: 75,  // Executive Updates Archive (Skipping Title)
+  EXEC_UPDATES_END_ROW: 120,
   
-  DOCUMENTS_START_ROW: 163,    // Document Repository Section (Skipping Title)
-  DOCUMENTS_END_ROW: 212,
+  DOCUMENTS_START_ROW: 161,    // Document Repository Section (Skipping Title)
+  DOCUMENTS_END_ROW: 202,
   
-  COMPLETED_START_ROW: 215,    // Completed Items (Skipping Title)
-  COMPLETED_END_ROW: 314,
+  COMPLETED_START_ROW: 216,    // Completed Items (Skipping Title)
+  COMPLETED_END_ROW: 219,
   
   // Alert Banner Settings
   ALERT_SHEET_NAME: 'Alerts',
