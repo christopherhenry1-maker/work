@@ -35,7 +35,7 @@ const CONFIG = {
   // Calendar Settings for Auto-Sync
   EXECUTIVE_CALENDAR_ID: 'michael.sarcone@verizon.com',
   SYNC_DAYS_AHEAD: 90,      // Pull meetings 90 days forward
-  SYNC_DAYS_BEHIND: 30,     // Pull meetings 30 days back
+  SYNC_DAYS_BEHIND: 0,      // Do not pull past meetings
   
   // Row ranges for Document Repository sheet
   // 
@@ -49,25 +49,25 @@ const CONFIG = {
   // ✅ You CAN move sections - just update START_ROW values below
   
   EXEC1_START_ROW: 3,          // Mike's/Sarcone's Deliverables (Skipping Title)
-  EXEC1_END_ROW: 20,
+  EXEC1_END_ROW: 13,
   
-  EXEC2_START_ROW: 23,         // DK's Governance Deliverables (Skipping Title)
-  EXEC2_END_ROW: 35,
+  EXEC2_START_ROW: 27,         // DK's Governance Deliverables (Skipping Title)
+  EXEC2_END_ROW: 37,
   
-  ADMIN_START_ROW: 38,         // Admin & Settings Links (Skipping Title)
-  ADMIN_END_ROW: 45,
+  ADMIN_START_ROW: 47,         // Admin & Settings Links (Skipping Title)
+  ADMIN_END_ROW: 52,
   
-  KPI_START_ROW: 49,           // KPIs & Performance (Skipping Title)
-  KPI_END_ROW: 60,
+  KPI_START_ROW: 57,           // KPIs & Performance (Skipping Title)
+  KPI_END_ROW: 68,
   
-  EXEC_UPDATES_START_ROW: 63,  // Executive Updates Archive (Skipping Title)
-  EXEC_UPDATES_END_ROW: 110,
+  EXEC_UPDATES_START_ROW: 75,  // Executive Updates Archive (Skipping Title)
+  EXEC_UPDATES_END_ROW: 120,
   
-  DOCUMENTS_START_ROW: 163,    // Document Repository Section (Skipping Title)
-  DOCUMENTS_END_ROW: 212,
+  DOCUMENTS_START_ROW: 161,    // Document Repository Section (Skipping Title)
+  DOCUMENTS_END_ROW: 202,
   
-  COMPLETED_START_ROW: 215,    // Completed Items (Skipping Title)
-  COMPLETED_END_ROW: 314,
+  COMPLETED_START_ROW: 216,    // Completed Items (Skipping Title)
+  COMPLETED_END_ROW: 219,
   
   // Alert Banner Settings
   ALERT_SHEET_NAME: 'Alerts',
@@ -88,7 +88,8 @@ const CONFIG = {
     ATTENDEES: 10,       // K
     DELIVERABLE_LINK: 11,// L
     PREP_REQUIRED: 12,   // M
-    NOTES: 14,           // O (N is empty column)
+    COLOR_ID: 13,        // N (Event color or hot topic level)
+    NOTES: 14,           // O
     EVENT_ID: 15         // P
   }
 };
@@ -191,7 +192,7 @@ function initializeMeetingsSheet(sheet) {
   const headers = [
     'COMPLETE', 'APPROVED', 'HOT TOPIC', 'MEETING NAME', 'DATE', 'TIME',
     'DURATION', 'FREQUENCY', 'CATEGORY', 'DESCRIPTION', 'ATTENDEES',
-    'DELIVERABLE LINK', 'PREP REQUIRED', '', 'NOTES', 'EVENT ID'
+    'DELIVERABLE LINK', 'PREP REQUIRED', 'COLOR ID', 'NOTES', 'EVENT ID'
   ];
   
   sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
@@ -299,7 +300,8 @@ function syncCalendarToMeetingsSheet() {
   
   // Calculate date range
   const now = new Date();
-  const startDate = new Date(now.getTime() - (CONFIG.SYNC_DAYS_BEHIND * 24 * 60 * 60 * 1000));
+  const startDate = new Date(now);
+  startDate.setHours(0, 0, 0, 0);
   const endDate = new Date(now.getTime() + (CONFIG.SYNC_DAYS_AHEAD * 24 * 60 * 60 * 1000));
   
   Logger.log(`📅 Syncing from ${startDate.toDateString()} to ${endDate.toDateString()}`);
@@ -349,6 +351,9 @@ function syncCalendarToMeetingsSheet() {
     const endTime = event.getEndTime();
     const duration = Math.round((endTime - startTime) / (1000 * 60)); // minutes
     
+    // Skip past meetings (including earlier today)
+    if (startTime < now) continue;
+    
     // Skip 0-minute meetings
     if (duration <= 0) continue;
     
@@ -372,11 +377,16 @@ function syncCalendarToMeetingsSheet() {
     const meetingType = determineMeetingType(title);
     const frequency = determineFrequency(event, title);
     
+    // Determine hot topic based on color and keywords
+    const hotTopicMeta = getHotTopicMeta(event, title, cleanDescription);
+    const isAutoHotTopic = hotTopicMeta.isHotTopic === true;
+    const hotTopicValue = isAutoHotTopic || (existingRow ? existingRow[CONFIG.MEETING_COLUMNS.HOT_TOPIC] === true : false);
+    
     // Build row - preserve checkbox states if meeting exists
     const row = [
       existingRow ? existingRow[CONFIG.MEETING_COLUMNS.COMPLETE] : false,        // A: Complete
       existingRow ? existingRow[CONFIG.MEETING_COLUMNS.APPROVED] : false,        // B: Approved
-      existingRow ? existingRow[CONFIG.MEETING_COLUMNS.HOT_TOPIC] : false,       // C: Hot Topic
+      hotTopicValue,                                                             // C: Hot Topic
       title,                                                                       // D: Meeting Name
       startTime,                                                                   // E: Date
       Utilities.formatDate(startTime, Session.getScriptTimeZone(), 'HH:mm'),     // F: Time
@@ -387,7 +397,7 @@ function syncCalendarToMeetingsSheet() {
       attendees,                                                                   // K: Attendees
       existingRow ? existingRow[CONFIG.MEETING_COLUMNS.DELIVERABLE_LINK] : '',   // L: Deliverable Link
       existingRow ? existingRow[CONFIG.MEETING_COLUMNS.PREP_REQUIRED] : false,   // M: Prep Required
-      '',                                                                          // N: Empty column
+      hotTopicMeta.metaValue || '',                                               // N: Color ID / Hot Topic Level
       existingRow ? existingRow[CONFIG.MEETING_COLUMNS.NOTES] : '',              // O: Notes
       eventId                                                                      // P: Event ID
     ];
@@ -404,6 +414,13 @@ function syncCalendarToMeetingsSheet() {
   if (newRows.length > 0) {
     sheet.getRange(2, 1, newRows.length, 16).setValues(newRows);
   }
+
+  // Ensure checkbox formatting for A, B, C, and M columns
+  const lastRow = Math.max(sheet.getLastRow(), 2);
+  sheet.getRange(2, 1, lastRow - 1, 1).insertCheckboxes(); // A
+  sheet.getRange(2, 2, lastRow - 1, 1).insertCheckboxes(); // B
+  sheet.getRange(2, 3, lastRow - 1, 1).insertCheckboxes(); // C
+  sheet.getRange(2, 13, lastRow - 1, 1).insertCheckboxes(); // M
   
   Logger.log(`✅ Sync complete! ${newRows.length} meetings synced`);
   try {
@@ -497,6 +514,45 @@ function shouldFilterMeeting(event, title) {
   // Rule for Attendees and Virtual Links has been removed.
   // All other events will now be synced to the sheet.
   return false;
+}
+
+function getEventColorIdSafe(event) {
+  try {
+    const color = event.getColor();
+    if (color === CalendarApp.EventColor.ORANGE) return '6';
+    if (color === CalendarApp.EventColor.RED) return '11';
+    if (color === CalendarApp.EventColor.YELLOW) return '5';
+    if (color === CalendarApp.EventColor.GREEN) return '10';
+    if (color === CalendarApp.EventColor.BLUE) return '9';
+    if (color === CalendarApp.EventColor.GRAY) return '8';
+    if (color === CalendarApp.EventColor.PURPLE) return '7';
+    if (color) return String(color);
+  } catch (e) {
+    Logger.log('Color lookup failed: ' + e);
+  }
+  return '';
+}
+
+function getHotTopicLevelFromText(title, description) {
+  const text = ((title || '') + ' ' + (description || '')).toLowerCase();
+  if (text.includes('urgent') || text.includes('critical')) return 'urgent';
+  if (text.includes('must attend') || text.includes('must-attend')) return 'must-attend';
+  return '';
+}
+
+function getHotTopicMeta(event, title, description) {
+  const colorId = getEventColorIdSafe(event);
+  let level = '';
+  if (colorId === '11') level = 'urgent';
+  if (colorId === '6') level = 'must-attend';
+  
+  if (!level) {
+    level = getHotTopicLevelFromText(title, description);
+  }
+  
+  const isHotTopic = level === 'urgent' || level === 'must-attend';
+  const metaValue = colorId ? colorId : (level || '');
+  return { isHotTopic: isHotTopic, level: level, metaValue: metaValue };
 }
 
 /**
@@ -834,8 +890,11 @@ function getExec1Deliverables() {
       const row = values[i];
       if (!row[0] || row[0].toString().trim() === '') break;
       
-      const eta = row[1] ? new Date(row[1]) : null;
-      const daysRemaining = eta ? Math.ceil((eta - today) / (1000 * 60 * 60 * 24)) : null;
+      const etaCell = row[1];
+      const etaStr = etaCell ? String(etaCell).trim() : '';
+      const isWeeklyEta = etaStr && etaStr.toLowerCase().includes('weekly');
+      const eta = !isWeeklyEta && etaCell ? new Date(etaCell) : null;
+      const daysRemaining = isWeeklyEta ? null : (eta ? Math.ceil((eta - today) / (1000 * 60 * 60 * 24)) : null);
       
       // Extract URL from Column D hyperlink
       let linkedMaterials = '';
@@ -850,14 +909,14 @@ function getExec1Deliverables() {
       deliverables.push({
         id: 'exec1-' + i,
         description: row[0] || '',
-        eta: eta ? Utilities.formatDate(eta, Session.getScriptTimeZone(), 'MMM dd') : '',
-        etaFull: eta ? Utilities.formatDate(eta, Session.getScriptTimeZone(), 'yyyy-MM-dd') : '',
+        eta: isWeeklyEta ? 'Weekly' : (eta ? Utilities.formatDate(eta, Session.getScriptTimeZone(), 'MMM dd') : ''),
+        etaFull: isWeeklyEta ? '' : (eta ? Utilities.formatDate(eta, Session.getScriptTimeZone(), 'yyyy-MM-dd') : ''),
         owner: row[2] || '',
         linkedMaterials: linkedMaterials,
         daysRemaining: daysRemaining,
-        daysRemainingText: daysRemaining !== null ? Math.abs(daysRemaining) + 'd' : '',
+        daysRemainingText: isWeeklyEta ? 'N/A' : (daysRemaining !== null ? Math.abs(daysRemaining) + 'd' : ''),
         comment: row[6] || '',
-        isHotTopic: daysRemaining !== null && daysRemaining <= 7,
+        isHotTopic: !isWeeklyEta && daysRemaining !== null && daysRemaining <= 7,
         isOverdue: daysRemaining !== null && daysRemaining < 0,
         urgency: getUrgencyLevel(daysRemaining)
       });
@@ -890,8 +949,11 @@ function getExec2Deliverables() {
       const row = values[i];
       if (!row[0] || row[0].toString().trim() === '') break;
       
-      const eta = row[1] ? new Date(row[1]) : null;
-      const daysRemaining = eta ? Math.ceil((eta - today) / (1000 * 60 * 60 * 24)) : null;
+      const etaCell = row[1];
+      const etaStr = etaCell ? String(etaCell).trim() : '';
+      const isWeeklyEta = etaStr && etaStr.toLowerCase().includes('weekly');
+      const eta = !isWeeklyEta && etaCell ? new Date(etaCell) : null;
+      const daysRemaining = isWeeklyEta ? null : (eta ? Math.ceil((eta - today) / (1000 * 60 * 60 * 24)) : null);
       
       // Extract URL from Column D hyperlink
       let linkedMaterials = '';
@@ -906,14 +968,14 @@ function getExec2Deliverables() {
       deliverables.push({
         id: 'exec2-' + i,
         description: row[0] || '',
-        eta: eta ? Utilities.formatDate(eta, Session.getScriptTimeZone(), 'MMM dd') : '',
-        etaFull: eta ? Utilities.formatDate(eta, Session.getScriptTimeZone(), 'yyyy-MM-dd') : '',
+        eta: isWeeklyEta ? 'Weekly' : (eta ? Utilities.formatDate(eta, Session.getScriptTimeZone(), 'MMM dd') : ''),
+        etaFull: isWeeklyEta ? '' : (eta ? Utilities.formatDate(eta, Session.getScriptTimeZone(), 'yyyy-MM-dd') : ''),
         owner: row[2] || '',
         linkedMaterials: linkedMaterials,
         daysRemaining: daysRemaining,
-        daysRemainingText: daysRemaining !== null ? Math.abs(daysRemaining) + 'd' : '',
+        daysRemainingText: isWeeklyEta ? 'N/A' : (daysRemaining !== null ? Math.abs(daysRemaining) + 'd' : ''),
         comment: row[6] || '',
-        isHotTopic: daysRemaining !== null && daysRemaining <= 7,
+        isHotTopic: !isWeeklyEta && daysRemaining !== null && daysRemaining <= 7,
         isOverdue: daysRemaining !== null && daysRemaining < 0,
         urgency: getUrgencyLevel(daysRemaining)
       });
@@ -924,6 +986,49 @@ function getExec2Deliverables() {
     Logger.log('Error getting Exec 2 deliverables: ' + error);
     return [];
   }
+}
+
+/**
+ * Get meetings for 2-week schedule view
+ */
+function normalizeMeetingTime(rawTime) {
+  if (!rawTime) {
+    return { time12: '', time24: '' };
+  }
+  
+  if (rawTime instanceof Date) {
+    return {
+      time12: Utilities.formatDate(rawTime, Session.getScriptTimeZone(), 'h:mm a'),
+      time24: Utilities.formatDate(rawTime, Session.getScriptTimeZone(), 'HH:mm')
+    };
+  }
+  
+  const str = String(rawTime).trim();
+  const ampmMatch = str.match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)$/i);
+  if (ampmMatch) {
+    let hour = parseInt(ampmMatch[1], 10);
+    const minute = (ampmMatch[2] || '00').padStart(2, '0');
+    const ampm = ampmMatch[3].toUpperCase();
+    if (ampm === 'PM' && hour !== 12) hour += 12;
+    if (ampm === 'AM' && hour === 12) hour = 0;
+    const time24 = String(hour).padStart(2, '0') + ':' + minute;
+    const hour12 = hour % 12 || 12;
+    const time12 = hour12 + ':' + minute + ' ' + ampm;
+    return { time12: time12, time24: time24 };
+  }
+  
+  const militaryMatch = str.match(/^(\d{1,2}):(\d{2})/);
+  if (militaryMatch) {
+    let hour = parseInt(militaryMatch[1], 10);
+    const minute = militaryMatch[2];
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const hour12 = hour % 12 || 12;
+    const time12 = hour12 + ':' + minute + ' ' + ampm;
+    const time24 = String(hour).padStart(2, '0') + ':' + minute;
+    return { time12: time12, time24: time24 };
+  }
+  
+  return { time12: str, time24: '' };
 }
 
 /**
@@ -959,46 +1064,30 @@ function getMeetings() {
       if (dayOfWeek === 0 || dayOfWeek === 6) continue;
 
       if (meetingDate >= rangeStart && meetingDate <= rangeEnd) {
+        const normalizedTime = normalizeMeetingTime(row[CONFIG.MEETING_COLUMNS.TIME]);
+        const colorMeta = row[CONFIG.MEETING_COLUMNS.COLOR_ID] ? String(row[CONFIG.MEETING_COLUMNS.COLOR_ID]).trim() : '';
+        const keywordLevel = getHotTopicLevelFromText(row[CONFIG.MEETING_COLUMNS.MEETING_NAME], row[CONFIG.MEETING_COLUMNS.DESCRIPTION]);
+        let hotTopicLevel = '';
+        if (colorMeta === '11') hotTopicLevel = 'urgent';
+        if (colorMeta === '6') hotTopicLevel = 'must-attend';
+        if (!hotTopicLevel && (colorMeta === 'urgent' || colorMeta === 'must-attend')) hotTopicLevel = colorMeta;
+        if (!hotTopicLevel && keywordLevel) hotTopicLevel = keywordLevel;
+        
+        const isHotTopic = row[CONFIG.MEETING_COLUMNS.HOT_TOPIC] === true || !!hotTopicLevel;
+        
         meetings.push({
           id: row[CONFIG.MEETING_COLUMNS.EVENT_ID] || 'meeting-' + i,
           title: row[CONFIG.MEETING_COLUMNS.MEETING_NAME] || '',
           date: Utilities.formatDate(meetingDate, Session.getScriptTimeZone(), 'yyyy-MM-dd'),
           dateFormatted: Utilities.formatDate(meetingDate, Session.getScriptTimeZone(), 'MMM dd'),
-          time: (function(t) {
-            if (!t) return '';
-            let timeStr = String(t);
-            // If it's a Date object from Sheets, format it
-            if (t instanceof Date) {
-              return Utilities.formatDate(t, Session.getScriptTimeZone(), 'h:mm a');
-            }
-            // If it's a string like "14:00", convert to 12h
-            if (/^\d{1,2}:\d{2}/.test(timeStr)) {
-              let [h, m] = timeStr.split(':');
-              h = parseInt(h);
-              let ampm = h >= 12 ? 'PM' : 'AM';
-              h = h % 12;
-              h = h ? h : 12;
-              return h + ':' + m.substring(0,2) + ' ' + ampm;
-            }
-            return timeStr;
-          })(row[CONFIG.MEETING_COLUMNS.TIME]),
-          rawTime: (function(t) {
-            if (!t) return '00:00';
-            if (t instanceof Date) {
-              return Utilities.formatDate(t, Session.getScriptTimeZone(), 'HH:mm');
-            }
-            let timeStr = String(t);
-            if (/^\d{1,2}:\d{2}/.test(timeStr)) {
-                let parts = timeStr.split(':');
-                return parts[0].padStart(2, '0') + ':' + parts[1].substring(0,2);
-            }
-            return '00:00';
-          })(row[CONFIG.MEETING_COLUMNS.TIME]),
+          time: normalizedTime.time12,
+          time24: normalizedTime.time24,
           duration: String(row[CONFIG.MEETING_COLUMNS.DURATION] || ''),
           category: row[CONFIG.MEETING_COLUMNS.CATEGORY] || 'meeting',
           description: row[CONFIG.MEETING_COLUMNS.DESCRIPTION] || '',
           attendees: row[CONFIG.MEETING_COLUMNS.ATTENDEES] || '',
-          isHotTopic: row[CONFIG.MEETING_COLUMNS.HOT_TOPIC] === true,
+          isHotTopic: isHotTopic,
+          hotTopicLevel: hotTopicLevel,
           prepRequired: row[CONFIG.MEETING_COLUMNS.PREP_REQUIRED] === true,
           deliverableLink: row[CONFIG.MEETING_COLUMNS.DELIVERABLE_LINK] || '',
           notes: row[CONFIG.MEETING_COLUMNS.NOTES] || '',
@@ -1013,8 +1102,8 @@ function getMeetings() {
       if (dateCompare !== 0) return dateCompare;
       
       // Compare times as strings (format: "HH:mm")
-      const timeA = a.time || '00:00';
-      const timeB = b.time || '00:00';
+      const timeA = a.time24 || '00:00';
+      const timeB = b.time24 || '00:00';
       return timeA.localeCompare(timeB);
     });
     
@@ -1374,6 +1463,44 @@ function createAgenda(meetingData) {
   }
 }
 
+/**
+ * Attach agenda document link to a meeting row
+ */
+function attachAgendaToMeeting(data) {
+  try {
+    const { meetingId, documentUrl, documentName } = data;
+    if (!meetingId || !documentUrl) {
+      return { success: false, error: 'Missing meetingId or documentUrl' };
+    }
+    
+    const sheet = getSheet(CONFIG.MEETINGS_SHEET_ID, CONFIG.MEETINGS_TAB_NAME);
+    if (!sheet) {
+      return { success: false, error: 'Meetings sheet not found' };
+    }
+    
+    const values = sheet.getDataRange().getValues();
+    let targetRow = -1;
+    for (let i = 1; i < values.length; i++) {
+      if (String(values[i][CONFIG.MEETING_COLUMNS.EVENT_ID] || '') === String(meetingId)) {
+        targetRow = i + 1;
+        break;
+      }
+    }
+    
+    if (targetRow === -1) {
+      return { success: false, error: 'Meeting not found' };
+    }
+    
+    const linkCell = sheet.getRange(targetRow, CONFIG.MEETING_COLUMNS.DELIVERABLE_LINK + 1);
+    linkCell.setFormula('=HYPERLINK(\"' + documentUrl + '\", \"' + (documentName || 'Agenda') + '\")');
+    
+    return { success: true };
+  } catch (error) {
+    Logger.log('Error attaching agenda: ' + error);
+    return { success: false, error: error.toString() };
+  }
+}
+
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
@@ -1554,18 +1681,25 @@ function addNewItem(itemData) {
     
     // Determine target section
     let targetStartRow;
+    let targetEndRow;
     if (itemData.section === 'exec1') {
       targetStartRow = CONFIG.EXEC1_START_ROW;
+      targetEndRow = CONFIG.EXEC1_END_ROW;
     } else if (itemData.section === 'exec2') {
       targetStartRow = CONFIG.EXEC2_START_ROW;
+      targetEndRow = CONFIG.EXEC2_END_ROW;
     } else {
       throw new Error('Unknown section: ' + itemData.section);
     }
     
     // Find first empty row in section
     let targetRow = targetStartRow;
-    while (sheet.getRange(targetRow, 1).getValue() !== '') {
+    while (targetRow <= targetEndRow && sheet.getRange(targetRow, 1).getValue() !== '') {
       targetRow++;
+    }
+    
+    if (targetRow > targetEndRow) {
+      throw new Error('No empty rows available in section: ' + itemData.section);
     }
     
     // Prepare row data (adjust columns based on your sheet structure)
@@ -1573,13 +1707,13 @@ function addNewItem(itemData) {
       itemData.description,
       itemData.eta || '',
       itemData.owner || '',
-      itemData.link || '',
-      itemData.comments || '',
-      itemData.isHotTopic ? 'YES' : ''
+      itemData.link || ''
     ];
     
-    // Insert data
+    // Insert data into columns A-D
     sheet.getRange(targetRow, 1, 1, rowData.length).setValues([rowData]);
+    // Comments go in column G
+    sheet.getRange(targetRow, 7).setValue(itemData.comments || '');
     
     return { success: true, message: 'Item added successfully' };
     
@@ -1599,52 +1733,51 @@ function addNewItem(itemData) {
  */
 function updateDeliverable(data) {
   try {
-    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
-    const sheet = ss.getSheetByName(CONFIG.SHEET_NAME);
+    const ss = SpreadsheetApp.openById(CONFIG.DELIVERABLES_SHEET_ID);
+    const sheet = ss.getSheetByName(CONFIG.DELIVERABLES_TAB_NAME);
     
     if (!sheet) {
-      return { success: false, error: 'Sheet not found: ' + CONFIG.SHEET_NAME };
+      return { success: false, error: 'Sheet not found: ' + CONFIG.DELIVERABLES_TAB_NAME };
     }
     
-    // Determine the row range based on execType
-    let startRow, endRow;
-    if (data.execType === 'exec1') {
-      startRow = CONFIG.EXEC1_START_ROW;
-      endRow = CONFIG.EXEC1_END_ROW;
-    } else if (data.execType === 'exec2') {
-      startRow = CONFIG.EXEC2_START_ROW;
-      endRow = CONFIG.EXEC2_END_ROW;
-    } else {
-      return { success: false, error: 'Invalid execType: ' + data.execType };
+    let execType = data.execType;
+    let itemIndex = data.itemIndex;
+    
+    if ((!execType || itemIndex === undefined) && data.id) {
+      const parts = String(data.id).split('-');
+      if (parts.length === 2) {
+        execType = parts[0];
+        itemIndex = parseInt(parts[1], 10);
+      }
     }
     
-    // Calculate actual row number
-    const actualRow = startRow + data.itemIndex;
+    if (execType !== 'exec1' && execType !== 'exec2') {
+      return { success: false, error: 'Invalid execType: ' + execType };
+    }
+    
+    if (isNaN(itemIndex)) {
+      return { success: false, error: 'Invalid item index' };
+    }
+    
+    const startRow = execType === 'exec1' ? CONFIG.EXEC1_START_ROW : CONFIG.EXEC2_START_ROW;
+    const endRow = execType === 'exec1' ? CONFIG.EXEC1_END_ROW : CONFIG.EXEC2_END_ROW;
+    const actualRow = startRow + itemIndex;
     
     if (actualRow > endRow) {
       return { success: false, error: 'Item index out of range' };
     }
     
-    // Update the row
-    // Assuming columns: A=Description, B=ETA, C=Owner, D=Link, E=HotTopic, F=Comments, G=LinkedMeetingId, H=MeetingType, I=DueDate
-    const range = sheet.getRange(actualRow, 1, 1, 9);
-    const values = [[
+    // Update columns A-D and G (comment). Preserve calculated columns.
+    sheet.getRange(actualRow, 1, 1, 4).setValues([[
       data.description || '',
       data.eta || '',
       data.owner || '',
-      data.link || '',
-      data.hotTopic ? 'TRUE' : 'FALSE',
-      data.comments || '',
-      data.linkedMeetingId || '',
-      data.meetingType || '',
-      data.dueDate || ''
-    ]];
+      data.link || ''
+    ]]);
+    sheet.getRange(actualRow, 7).setValue(data.comments || '');
     
-    range.setValues(values);
-    
-    // Update hyperlink in Column D if provided
     if (data.link) {
-      const linkCell = sheet.getRange(actualRow, 4); // Column D
+      const linkCell = sheet.getRange(actualRow, 4);
       linkCell.setFormula('=HYPERLINK("' + data.link + '", "Link to File")');
     }
     
@@ -1664,11 +1797,11 @@ function updateDeliverable(data) {
  */
 function deleteDeliverable(data) {
   try {
-    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
-    const sheet = ss.getSheetByName(CONFIG.SHEET_NAME);
+    const ss = SpreadsheetApp.openById(CONFIG.DELIVERABLES_SHEET_ID);
+    const sheet = ss.getSheetByName(CONFIG.DELIVERABLES_TAB_NAME);
     
     if (!sheet) {
-      return { success: false, error: 'Sheet not found: ' + CONFIG.SHEET_NAME };
+      return { success: false, error: 'Sheet not found: ' + CONFIG.DELIVERABLES_TAB_NAME };
     }
     
     // Determine the row range based on execType
@@ -1691,7 +1824,7 @@ function deleteDeliverable(data) {
     }
     
     // Clear the row (don't delete to preserve row numbers)
-    const range = sheet.getRange(actualRow, 1, 1, 9);
+    const range = sheet.getRange(actualRow, 1, 1, 7);
     range.clearContent();
     
     Logger.log('✅ Deleted deliverable at row: ' + actualRow);
@@ -1710,11 +1843,11 @@ function deleteDeliverable(data) {
  */
 function addDeliverable(data) {
   try {
-    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
-    const sheet = ss.getSheetByName(CONFIG.SHEET_NAME);
+    const ss = SpreadsheetApp.openById(CONFIG.DELIVERABLES_SHEET_ID);
+    const sheet = ss.getSheetByName(CONFIG.DELIVERABLES_TAB_NAME);
     
     if (!sheet) {
-      return { success: false, error: 'Sheet not found: ' + CONFIG.SHEET_NAME };
+      return { success: false, error: 'Sheet not found: ' + CONFIG.DELIVERABLES_TAB_NAME };
     }
     
     // Determine the row range based on execType
@@ -1746,24 +1879,20 @@ function addDeliverable(data) {
     }
     
     // Add the new item
-    const newRange = sheet.getRange(emptyRow, 1, 1, 9);
+    const newRange = sheet.getRange(emptyRow, 1, 1, 4);
     const newValues = [[
       data.description || '',
       data.eta || '',
       data.owner || '',
-      data.link || '',
-      data.hotTopic ? 'TRUE' : 'FALSE',
-      data.comments || '',
-      data.linkedMeetingId || '',
-      data.meetingType || '',
-      data.dueDate || ''
+      data.link || ''
     ]];
     
     newRange.setValues(newValues);
+    sheet.getRange(emptyRow, 7).setValue(data.comments || '');
     
     // Set hyperlink in Column D if provided
     if (data.link) {
-      const linkCell = sheet.getRange(emptyRow, 4); // Column D
+      const linkCell = sheet.getRange(emptyRow, 4);
       linkCell.setFormula('=HYPERLINK("' + data.link + '", "Link to File")');
     }
     
@@ -1777,13 +1906,13 @@ function addDeliverable(data) {
 }
 
 /**
- * Generate PDF of weekly schedule
+ * Generate PDF of 2-week schedule
  * @param {Object} options - Export options including selected meetings, week title, etc.
  * @return {Object} - Contains success status and download URL or error
  */
 function generateWeeklySchedulePDF(options) {
   try {
-    const { selectedMeetingIds, weekTitle, includePrepMeetings, agendaItems } = options;
+    const { selectedMeetingIds, weekTitle, includePrepMeetings, agendaItems, notes } = options;
     
     // Get all meetings
     const allMeetings = getMeetings();
@@ -1795,7 +1924,7 @@ function generateWeeklySchedulePDF(options) {
     }
     
     // Create a new Google Doc for the PDF
-    const doc = DocumentApp.create('Weekly Schedule - ' + (weekTitle || new Date().toLocaleDateString()));
+    const doc = DocumentApp.create('Two-Week Schedule - ' + (weekTitle || new Date().toLocaleDateString()));
     const body = doc.getBody();
     
     // Set page to landscape
@@ -1806,7 +1935,7 @@ function generateWeeklySchedulePDF(options) {
     body.setMarginRight(36);
     
     // Title
-    const title = body.appendParagraph(weekTitle || 'The Current Week: A Funnel from Data to Decision');
+    const title = body.appendParagraph(weekTitle || 'Two-Week Executive Schedule');
     title.setHeading(DocumentApp.ParagraphHeading.HEADING1);
     title.setForegroundColor('#ffffff');
     title.setBackgroundColor('#000000');
@@ -1822,54 +1951,19 @@ function generateWeeklySchedulePDF(options) {
       meetingsByDate[m.date].push(m);
     });
     
-    // Get unique dates and sort
-    const dates = Object.keys(meetingsByDate).sort();
-    
-    // Create table for schedule
-    const table = body.appendTable();
-    
-    // Header row with day names and dates
-    const headerRow = table.appendTableRow();
-    const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-    
-    // Calculate the Monday of the first week
-    let firstDate = new Date(dates[0] + 'T00:00:00');
-    const firstDayOfWeek = firstDate.getDay();
-    const mondayOffset = firstDayOfWeek === 0 ? -6 : 1 - firstDayOfWeek;
-    const monday = new Date(firstDate);
-    monday.setDate(firstDate.getDate() + mondayOffset);
-    
-    // Build header row for each weekday
-    for (let i = 0; i < 5; i++) {
-      const dayDate = new Date(monday);
-      dayDate.setDate(monday.getDate() + i);
-      const dateStr = Utilities.formatDate(dayDate, Session.getScriptTimeZone(), 'MM/dd');
-      const dayName = dayNames[i];
-      
-      const cell = headerRow.appendTableCell(dayName + ' (' + dateStr + ')');
-      cell.setBackgroundColor('#cc0000');
-      cell.getChild(0).asParagraph().setForegroundColor('#ffffff');
-      cell.getChild(0).asParagraph().setAlignment(DocumentApp.HorizontalAlignment.CENTER);
-      cell.setWidth(144); // 720/5 = 144 points per column
-    }
-    
-    // Content row
-    const contentRow = table.appendTableRow();
-    
     // Detect conflicts (meetings at same time on same day)
     for (const date of Object.keys(meetingsByDate)) {
       const dayMeetings = meetingsByDate[date];
       const timeSlots = {};
       
       dayMeetings.forEach(m => {
-        const timeKey = m.time24;
+        const timeKey = m.time24 || '';
         if (!timeSlots[timeKey]) {
           timeSlots[timeKey] = [];
         }
         timeSlots[timeKey].push(m);
       });
       
-      // Mark conflicts
       for (const timeKey of Object.keys(timeSlots)) {
         if (timeSlots[timeKey].length > 1) {
           timeSlots[timeKey].forEach(m => {
@@ -1879,86 +1973,120 @@ function generateWeeklySchedulePDF(options) {
       }
     }
     
-    // Fill in content for each day
-    for (let i = 0; i < 5; i++) {
-      const dayDate = new Date(monday);
-      dayDate.setDate(monday.getDate() + i);
-      const dateStr = Utilities.formatDate(dayDate, Session.getScriptTimeZone(), 'yyyy-MM-dd');
-      
-      const cell = contentRow.appendTableCell();
-      cell.setVerticalAlignment(DocumentApp.VerticalAlignment.TOP);
-      
-      const dayMeetings = meetingsByDate[dateStr] || [];
-      dayMeetings.sort((a, b) => (a.time24 || '').localeCompare(b.time24 || ''));
-      
-      if (dayMeetings.length === 0) {
-        cell.setText('No meetings');
-        cell.getChild(0).asParagraph().setForegroundColor('#999999');
-      } else {
-        // Clear default text
-        cell.clear();
-        
-        dayMeetings.forEach((m, idx) => {
-          // Time
-          const timePara = cell.appendParagraph(m.time || 'TBD');
-          timePara.setBold(true);
-          timePara.setFontSize(9);
-          
-          // Meeting name
-          const namePara = cell.appendParagraph(m.title);
-          namePara.setFontSize(8);
-          
-          // Highlight important meetings in red
-          if (m.isHotTopic || m.prepRequired) {
-            namePara.setForegroundColor('#cc0000');
-          }
-          
-          // Mark conflicts
-          if (m.hasConflict) {
-            const conflictPara = cell.appendParagraph('⚠️ CONFLICT');
-            conflictPara.setForegroundColor('#ff6600');
-            conflictPara.setFontSize(7);
-            conflictPara.setBold(true);
-            
-            // Also highlight the meeting name
-            namePara.setBackgroundColor('#fff3cd');
-          }
-          
-          // Add prep meeting indicator if needed
-          if (includePrepMeetings && m.prepRequired) {
-            const prepPara = cell.appendParagraph('📋 Prep Required');
-            prepPara.setFontSize(7);
-            prepPara.setForegroundColor('#0066cc');
-          }
-          
-          // Add spacing between meetings
-          if (idx < dayMeetings.length - 1) {
-            cell.appendParagraph('');
-          }
-        });
+    const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+    
+    function appendWeekTable(monday, label) {
+      if (label) {
+        const labelPara = body.appendParagraph(label);
+        labelPara.setHeading(DocumentApp.ParagraphHeading.HEADING2);
+        labelPara.setSpacingAfter(6);
       }
+      
+      const table = body.appendTable();
+      const headerRow = table.appendTableRow();
+      
+      for (let i = 0; i < 5; i++) {
+        const dayDate = new Date(monday);
+        dayDate.setDate(monday.getDate() + i);
+        const dateStr = Utilities.formatDate(dayDate, Session.getScriptTimeZone(), 'MM/dd');
+        const dayName = dayNames[i];
+        
+        const cell = headerRow.appendTableCell(dayName + ' (' + dateStr + ')');
+        cell.setBackgroundColor('#cc0000');
+        cell.getChild(0).asParagraph().setForegroundColor('#ffffff');
+        cell.getChild(0).asParagraph().setAlignment(DocumentApp.HorizontalAlignment.CENTER);
+        cell.setWidth(144); // 720/5 = 144 points per column
+      }
+      
+      const contentRow = table.appendTableRow();
+      
+      for (let i = 0; i < 5; i++) {
+        const dayDate = new Date(monday);
+        dayDate.setDate(monday.getDate() + i);
+        const dateStr = Utilities.formatDate(dayDate, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+        
+        const cell = contentRow.appendTableCell();
+        cell.setVerticalAlignment(DocumentApp.VerticalAlignment.TOP);
+        
+        const dayMeetings = meetingsByDate[dateStr] || [];
+        dayMeetings.sort((a, b) => (a.time24 || '').localeCompare(b.time24 || ''));
+        
+        if (dayMeetings.length === 0) {
+          cell.setText('No meetings');
+          cell.getChild(0).asParagraph().setForegroundColor('#999999');
+        } else {
+          cell.clear();
+          
+          dayMeetings.forEach((m, idx) => {
+            const timePara = cell.appendParagraph(m.time || 'TBD');
+            timePara.setBold(true);
+            timePara.setFontSize(9);
+            
+            const namePara = cell.appendParagraph(m.title);
+            namePara.setFontSize(8);
+            
+            if (m.isHotTopic || m.prepRequired) {
+              namePara.setForegroundColor('#cc0000');
+            }
+            
+            if (m.hasConflict) {
+              const conflictPara = cell.appendParagraph('⚠️ CONFLICT');
+              conflictPara.setForegroundColor('#ff6600');
+              conflictPara.setFontSize(7);
+              conflictPara.setBold(true);
+              namePara.setBackgroundColor('#fff3cd');
+            }
+            
+            if (includePrepMeetings && m.prepRequired) {
+              const prepPara = cell.appendParagraph('📋 Prep Required');
+              prepPara.setFontSize(7);
+              prepPara.setForegroundColor('#0066cc');
+            }
+            
+            if (idx < dayMeetings.length - 1) {
+              cell.appendParagraph('');
+            }
+          });
+        }
+      }
+    }
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const day = today.getDay();
+    const mondayOffset = day === 0 ? -6 : 1 - day;
+    const monday = new Date(today);
+    monday.setDate(today.getDate() + mondayOffset);
+    const secondWeekMonday = new Date(monday);
+    secondWeekMonday.setDate(monday.getDate() + 7);
+    
+    appendWeekTable(monday, 'Week 1');
+    body.appendParagraph('');
+    appendWeekTable(secondWeekMonday, 'Week 2');
+    
+    if (notes && notes.trim()) {
+      body.appendParagraph('');
+      const notesHeader = body.appendParagraph('Notes & Commentary');
+      notesHeader.setHeading(DocumentApp.ParagraphHeading.HEADING2);
+      body.appendParagraph(notes.trim());
     }
     
     // Add agenda items section if provided
     if (agendaItems && Object.keys(agendaItems).length > 0) {
       body.appendParagraph('');
       
-      // Add bottom section table
       const bottomTable = body.appendTable();
       const bottomRow = bottomTable.appendTableRow();
       
-      // Add cells for each agenda section
       for (const [sectionName, items] of Object.entries(agendaItems)) {
         const cell = bottomRow.appendTableCell();
         cell.setBackgroundColor('#000000');
         
-        // Section header
         const headerPara = cell.appendParagraph(sectionName);
         headerPara.setForegroundColor('#ffffff');
         headerPara.setBold(true);
         headerPara.setFontSize(10);
         
-        // Items
         if (items && items.length > 0) {
           items.forEach(item => {
             const itemPara = cell.appendParagraph('• ' + item);
@@ -1983,7 +2111,7 @@ function generateWeeklySchedulePDF(options) {
     // Convert to PDF
     const docFile = DriveApp.getFileById(doc.getId());
     const pdfBlob = docFile.getAs('application/pdf');
-    pdfBlob.setName('Weekly_Schedule_' + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd') + '.pdf');
+    pdfBlob.setName('Two_Week_Schedule_' + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd') + '.pdf');
     
     // Save PDF to Drive
     const pdfFile = DriveApp.createFile(pdfBlob);
