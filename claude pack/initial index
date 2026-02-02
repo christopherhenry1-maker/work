@@ -2008,15 +2008,27 @@
                                     <div class="loading-message">Loading...</div>
                                 </div>
                             </div>
-                            
-                            <!-- Document Repository Column -->
-                            <div class="card">
-                                <div class="card-header">
-                                    <h2 class="card-title">Document Repository</h2>
-                                </div>
-                                <div id="documentsRepository">
-                                    <div class="loading-message">Loading...</div>
-                                </div>
+                        </div>
+                        
+                        <!-- Document Repository Full Table -->
+                        <div class="card" style="margin-top: 1.5rem;">
+                            <div class="card-header">
+                                <h2 class="card-title">Document Repository</h2>
+                            </div>
+                            <div class="table-wrapper">
+                                <table class="deliverables-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 35%;">DESCRIPTION</th>
+                                            <th style="width: 20%;">OWNER</th>
+                                            <th style="width: 30%;">LINK TO MATERIALS</th>
+                                            <th style="width: 15%;">COMMENTS</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="documentsRepository">
+                                        <tr><td colspan="4" class="loading-message">Loading...</td></tr>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
@@ -2395,7 +2407,7 @@ function renderDeliverablesTable(deliverables) {
                             <span class="item-description" style="display: inline;">${item.isHotTopic ? '🔥 ' : ''}${escapeHtml(item.description)}</span>
                             ${item.subtext ? `<div class="item-subtext" style="font-style: italic; color: var(--color-slate-500); margin-top: 0.25rem; font-size: 0.75rem;">${escapeHtml(item.subtext)}</div>` : ''}
                         </td>
-                        <td style="white-space: nowrap;">${item.eta || '—'}</td>
+                        <td style="white-space: nowrap;">${item.eta && item.eta.trim() ? item.eta : '—'}</td>
                         <td>${escapeHtml(item.owner) || '—'}</td>
                         <td>
                             ${item.linkedMaterials ? `
@@ -2408,7 +2420,7 @@ function renderDeliverablesTable(deliverables) {
                             ` : '—'}
                         </td>
                         <td>
-                            ${item.daysRemainingText ? `<span class="remaining-badge ${item.urgency}" style="font-size: 0.75rem; padding: 0.125rem 0.5rem;">${item.daysRemainingText}</span>` : '—'}
+                            ${item.daysRemainingText ? `<span class="remaining-badge ${item.urgency === 'none' ? 'badge-text' : item.urgency}" style="font-size: 0.75rem; padding: 0.125rem 0.5rem;">${item.daysRemainingText}</span>` : '—'}
                         </td>
                     </tr>
                 `).join('')}
@@ -2580,6 +2592,112 @@ function isDateToday(dateStr) {
 // SIDEBAR LINKS RENDERING
 // ============================================================================
 
+// ============================================================================
+// DOCUMENTS PAGE RENDERING
+// ============================================================================
+
+function renderDocumentsPage() {
+    // Admin Links
+    const adminContainer = document.getElementById('documentsAdmin');
+    if (dashboardData.adminLinks && dashboardData.adminLinks.length > 0) {
+        adminContainer.innerHTML = `
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                ${dashboardData.adminLinks.map(link => `
+                    <a href="${link.url || '#'}" target="_blank" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: var(--color-slate-50); border-radius: 0.5rem; text-decoration: none; color: var(--color-slate-700); transition: all 0.2s;" onmouseover="this.style.background='var(--color-slate-100)'" onmouseout="this.style.background='var(--color-slate-50)'">
+                        <svg class="icon-xs" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; font-size: 0.875rem;">${escapeHtml(link.name)}</div>
+                        </div>
+                        <svg class="icon-xs" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                        </svg>
+                    </a>
+                `).join('')}
+            </div>
+        `;
+    } else {
+        adminContainer.innerHTML = '<p style="color: var(--color-slate-500); text-align: center; padding: 2rem;">No admin links configured</p>';
+    }
+    
+    // KPI Links
+    const kpiContainer = document.getElementById('documentsKPIs');
+    if (dashboardData.kpiLinks && dashboardData.kpiLinks.length > 0) {
+        kpiContainer.innerHTML = `
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                ${dashboardData.kpiLinks.map(link => `
+                    <a href="${link.url || '#'}" target="_blank" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: var(--color-slate-50); border-radius: 0.5rem; text-decoration: none; color: var(--color-slate-700); transition: all 0.2s;" onmouseover="this.style.background='var(--color-slate-100)'" onmouseout="this.style.background='var(--color-slate-50)'">
+                        <svg class="icon-xs" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; font-size: 0.875rem;">${escapeHtml(link.name)}</div>
+                        </div>
+                        <svg class="icon-xs" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                        </svg>
+                    </a>
+                `).join('')}
+            </div>
+        `;
+    } else {
+        kpiContainer.innerHTML = '<p style="color: var(--color-slate-500); text-align: center; padding: 2rem;">No KPI links configured</p>';
+    }
+    
+    // Executive Updates
+    const updatesContainer = document.getElementById('documentsExecUpdates');
+    if (dashboardData.executiveUpdates && dashboardData.executiveUpdates.length > 0) {
+        updatesContainer.innerHTML = `
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                ${dashboardData.executiveUpdates.map(update => `
+                    <a href="${update.url || update.link || '#'}" target="_blank" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: var(--color-slate-50); border-radius: 0.5rem; text-decoration: none; color: var(--color-slate-700); transition: all 0.2s;" onmouseover="this.style.background='var(--color-slate-100)'" onmouseout="this.style.background='var(--color-slate-50)'">
+                        <svg class="icon-xs" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                        </svg>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; font-size: 0.875rem;">${escapeHtml(update.name)}</div>
+                            ${update.dateAdded ? `<div style="font-size: 0.625rem; color: var(--color-slate-400);">${update.dateAdded}</div>` : ''}
+                        </div>
+                        <svg class="icon-xs" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                        </svg>
+                    </a>
+                `).join('')}
+            </div>
+        `;
+    } else {
+        updatesContainer.innerHTML = '<p style="color: var(--color-slate-500); text-align: center; padding: 2rem;">No updates available</p>';
+    }
+    
+    // Document Repository Table (columns A, C, D, G = Description, Owner, Link, Comments)
+    const docRepoTable = document.getElementById('documentsRepository');
+    if (dashboardData.documentRepoLinks && dashboardData.documentRepoLinks.length > 0) {
+        docRepoTable.innerHTML = dashboardData.documentRepoLinks.map(doc => `
+            <tr style="cursor: pointer;">
+                <td>
+                    <div style="font-weight: 600;">${escapeHtml(doc.name || doc.description)}</div>
+                    ${doc.comment ? `<div style="font-size: 0.75rem; color: var(--color-slate-500); margin-top: 0.25rem;">${escapeHtml(doc.comment)}</div>` : ''}
+                </td>
+                <td>${escapeHtml(doc.owner) || '—'}</td>
+                <td>
+                    ${doc.url || doc.link ? `
+                        <a href="${doc.url || doc.link}" target="_blank" style="color: var(--color-red-600); text-decoration: none; display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.875rem;" onclick="event.stopPropagation();">
+                            <svg class="icon" style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                            </svg>
+                            Open
+                        </a>
+                    ` : '—'}
+                </td>
+                <td>${doc.comment ? `<span style="font-size: 0.875rem;">${escapeHtml(doc.comment)}</span>` : '—'}</td>
+            </tr>
+        `).join('');
+    } else {
+        docRepoTable.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 2rem; color: var(--color-slate-500);">No documents found</td></tr>';
+    }
+}
+
 function renderSidebarLinks() {
     // Admin Links
     const adminContainer = document.getElementById('adminLinks');
@@ -2645,6 +2763,24 @@ function renderSidebarLinks() {
         `).join('');
     } else {
         completedContainer.innerHTML = '<p style="font-size: 0.75rem; color: var(--color-slate-400); padding: 0.5rem;">No completed items yet</p>';
+    }
+    
+    // Document Repository Links (limit to first 10)
+    const docRepoContainer = document.getElementById('documentRepoLinks');
+    if (dashboardData.documentRepoLinks && dashboardData.documentRepoLinks.length > 0) {
+        docRepoContainer.innerHTML = dashboardData.documentRepoLinks.slice(0, 10).map(doc => `
+            <a href="${doc.url || doc.link || '#'}" target="_blank" class="sidebar-link">
+                <svg class="icon-xs" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <div style="flex: 1;">
+                    <div style="font-weight: 600;">${escapeHtml(doc.name || doc.description)}</div>
+                    ${doc.owner ? `<div style="font-size: 0.625rem; color: var(--color-slate-400);">Owner: ${escapeHtml(doc.owner)}</div>` : ''}
+                </div>
+            </a>
+        `).join('');
+    } else {
+        docRepoContainer.innerHTML = '<p style="font-size: 0.75rem; color: var(--color-slate-400); padding: 0.5rem;">No documents available</p>';
     }
 }
 
@@ -2816,8 +2952,8 @@ function switchPage(pageName) {
     event.target.closest('.page-tab').classList.add('active');
     
     // Load page-specific data if needed
-    if (pageName === 'documents' && document.getElementById('documentRepository').innerHTML.includes('Loading')) {
-        renderDocumentRepository();
+    if (pageName === 'documents') {
+        renderDocumentsPage();
     }
 }
 
