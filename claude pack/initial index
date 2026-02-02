@@ -1330,7 +1330,7 @@
         }
 
         .month-column-body {
-            max-height: 360px;
+            max-height: 220px;
             overflow-y: auto;
             padding-right: 0.25rem;
         }
@@ -3917,6 +3917,7 @@ function renderMeetingsCalendar() {
     // If firstDay is Monday(1), we need 0 days from prev month.
     // If firstDay is Tuesday(2), we need 1 day (Monday).
     let daysToFill = (firstDayOfWeek === 0) ? 6 : firstDayOfWeek - 1;
+    const mondayOffset = -daysToFill;
     
     for (let i = daysToFill; i > 0; i--) {
         const d = new Date(year, month, 1);
