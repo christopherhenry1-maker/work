@@ -414,6 +414,13 @@ function syncCalendarToMeetingsSheet() {
   if (newRows.length > 0) {
     sheet.getRange(2, 1, newRows.length, 16).setValues(newRows);
   }
+
+  // Ensure checkbox formatting for A, B, C, and M columns
+  const lastRow = Math.max(sheet.getLastRow(), 2);
+  sheet.getRange(2, 1, lastRow - 1, 1).insertCheckboxes(); // A
+  sheet.getRange(2, 2, lastRow - 1, 1).insertCheckboxes(); // B
+  sheet.getRange(2, 3, lastRow - 1, 1).insertCheckboxes(); // C
+  sheet.getRange(2, 13, lastRow - 1, 1).insertCheckboxes(); // M
   
   Logger.log(`✅ Sync complete! ${newRows.length} meetings synced`);
   try {
