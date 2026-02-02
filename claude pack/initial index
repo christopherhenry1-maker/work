@@ -1181,9 +1181,11 @@
 
         .calendar-month-day {
             background-color: white;
-            min-height: 100px;
+            min-height: 120px;
+            max-height: 150px;
             padding: 0.5rem;
             vertical-align: top;
+            overflow-y: auto;
         }
 
         .calendar-month-day.other-month {
@@ -3697,15 +3699,11 @@ function renderMeetingsCalendar() {
         // Sort meetings by time
         dayMeetings.sort((a, b) => (a.time || '').localeCompare(b.time || ''));
         
-        dayMeetings.slice(0, 3).forEach(m => {
+        dayMeetings.forEach(m => {
             html += `<div class="calendar-meeting-item" onclick="openMeetingModal('${m.id}')">
                 <span style="font-weight: 600;">${m.time}</span> ${escapeHtml(m.title.substring(0, 15))}${m.title.length > 15 ? '...' : ''}
             </div>`;
         });
-        
-        if (dayMeetings.length > 3) {
-            html += `<div style="font-size: 0.65rem; color: var(--color-slate-500); text-align: center;">+${dayMeetings.length - 3} more</div>`;
-        }
         
         html += `</div>`;
     }
@@ -3746,7 +3744,11 @@ function renderMeetingsList() {
         return;
     }
     
-    const sorted = [...meetings].sort((a, b) => new Date(a.date) - new Date(b.date));
+    const sorted = [...meetings].sort((a, b) => {
+        const dateCompare = new Date(a.date + 'T00:00:00') - new Date(b.date + 'T00:00:00');
+        if (dateCompare !== 0) return dateCompare;
+        return (a.time || '').localeCompare(b.time || '');
+    });
     
     let html = `
         <table class="deliverables-table">
