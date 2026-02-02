@@ -834,8 +834,11 @@ function getExec1Deliverables() {
       const row = values[i];
       if (!row[0] || row[0].toString().trim() === '') break;
       
-      const eta = row[1] ? new Date(row[1]) : null;
-      const daysRemaining = eta ? Math.ceil((eta - today) / (1000 * 60 * 60 * 24)) : null;
+      const etaCell = row[1];
+      const etaStr = etaCell ? String(etaCell).trim() : '';
+      const isWeeklyEta = etaStr && etaStr.toLowerCase().includes('weekly');
+      const eta = !isWeeklyEta && etaCell ? new Date(etaCell) : null;
+      const daysRemaining = isWeeklyEta ? null : (eta ? Math.ceil((eta - today) / (1000 * 60 * 60 * 24)) : null);
       
       // Extract URL from Column D hyperlink
       let linkedMaterials = '';
@@ -850,14 +853,14 @@ function getExec1Deliverables() {
       deliverables.push({
         id: 'exec1-' + i,
         description: row[0] || '',
-        eta: eta ? Utilities.formatDate(eta, Session.getScriptTimeZone(), 'MMM dd') : '',
-        etaFull: eta ? Utilities.formatDate(eta, Session.getScriptTimeZone(), 'yyyy-MM-dd') : '',
+        eta: isWeeklyEta ? 'Weekly' : (eta ? Utilities.formatDate(eta, Session.getScriptTimeZone(), 'MMM dd') : ''),
+        etaFull: isWeeklyEta ? '' : (eta ? Utilities.formatDate(eta, Session.getScriptTimeZone(), 'yyyy-MM-dd') : ''),
         owner: row[2] || '',
         linkedMaterials: linkedMaterials,
         daysRemaining: daysRemaining,
-        daysRemainingText: daysRemaining !== null ? Math.abs(daysRemaining) + 'd' : '',
+        daysRemainingText: isWeeklyEta ? 'N/A' : (daysRemaining !== null ? Math.abs(daysRemaining) + 'd' : ''),
         comment: row[6] || '',
-        isHotTopic: daysRemaining !== null && daysRemaining <= 7,
+        isHotTopic: !isWeeklyEta && daysRemaining !== null && daysRemaining <= 7,
         isOverdue: daysRemaining !== null && daysRemaining < 0,
         urgency: getUrgencyLevel(daysRemaining)
       });
@@ -890,8 +893,11 @@ function getExec2Deliverables() {
       const row = values[i];
       if (!row[0] || row[0].toString().trim() === '') break;
       
-      const eta = row[1] ? new Date(row[1]) : null;
-      const daysRemaining = eta ? Math.ceil((eta - today) / (1000 * 60 * 60 * 24)) : null;
+      const etaCell = row[1];
+      const etaStr = etaCell ? String(etaCell).trim() : '';
+      const isWeeklyEta = etaStr && etaStr.toLowerCase().includes('weekly');
+      const eta = !isWeeklyEta && etaCell ? new Date(etaCell) : null;
+      const daysRemaining = isWeeklyEta ? null : (eta ? Math.ceil((eta - today) / (1000 * 60 * 60 * 24)) : null);
       
       // Extract URL from Column D hyperlink
       let linkedMaterials = '';
@@ -906,14 +912,14 @@ function getExec2Deliverables() {
       deliverables.push({
         id: 'exec2-' + i,
         description: row[0] || '',
-        eta: eta ? Utilities.formatDate(eta, Session.getScriptTimeZone(), 'MMM dd') : '',
-        etaFull: eta ? Utilities.formatDate(eta, Session.getScriptTimeZone(), 'yyyy-MM-dd') : '',
+        eta: isWeeklyEta ? 'Weekly' : (eta ? Utilities.formatDate(eta, Session.getScriptTimeZone(), 'MMM dd') : ''),
+        etaFull: isWeeklyEta ? '' : (eta ? Utilities.formatDate(eta, Session.getScriptTimeZone(), 'yyyy-MM-dd') : ''),
         owner: row[2] || '',
         linkedMaterials: linkedMaterials,
         daysRemaining: daysRemaining,
-        daysRemainingText: daysRemaining !== null ? Math.abs(daysRemaining) + 'd' : '',
+        daysRemainingText: isWeeklyEta ? 'N/A' : (daysRemaining !== null ? Math.abs(daysRemaining) + 'd' : ''),
         comment: row[6] || '',
-        isHotTopic: daysRemaining !== null && daysRemaining <= 7,
+        isHotTopic: !isWeeklyEta && daysRemaining !== null && daysRemaining <= 7,
         isOverdue: daysRemaining !== null && daysRemaining < 0,
         urgency: getUrgencyLevel(daysRemaining)
       });
@@ -1589,13 +1595,13 @@ function addNewItem(itemData) {
       itemData.description,
       itemData.eta || '',
       itemData.owner || '',
-      itemData.link || '',
-      itemData.comments || '',
-      itemData.isHotTopic ? 'YES' : ''
+      itemData.link || ''
     ];
     
-    // Insert data
+    // Insert data into columns A-D
     sheet.getRange(targetRow, 1, 1, rowData.length).setValues([rowData]);
+    // Comments go in column G
+    sheet.getRange(targetRow, 7).setValue(itemData.comments || '');
     
     return { success: true, message: 'Item added successfully' };
     
@@ -1615,52 +1621,51 @@ function addNewItem(itemData) {
  */
 function updateDeliverable(data) {
   try {
-    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
-    const sheet = ss.getSheetByName(CONFIG.SHEET_NAME);
+    const ss = SpreadsheetApp.openById(CONFIG.DELIVERABLES_SHEET_ID);
+    const sheet = ss.getSheetByName(CONFIG.DELIVERABLES_TAB_NAME);
     
     if (!sheet) {
-      return { success: false, error: 'Sheet not found: ' + CONFIG.SHEET_NAME };
+      return { success: false, error: 'Sheet not found: ' + CONFIG.DELIVERABLES_TAB_NAME };
     }
     
-    // Determine the row range based on execType
-    let startRow, endRow;
-    if (data.execType === 'exec1') {
-      startRow = CONFIG.EXEC1_START_ROW;
-      endRow = CONFIG.EXEC1_END_ROW;
-    } else if (data.execType === 'exec2') {
-      startRow = CONFIG.EXEC2_START_ROW;
-      endRow = CONFIG.EXEC2_END_ROW;
-    } else {
-      return { success: false, error: 'Invalid execType: ' + data.execType };
+    let execType = data.execType;
+    let itemIndex = data.itemIndex;
+    
+    if ((!execType || itemIndex === undefined) && data.id) {
+      const parts = String(data.id).split('-');
+      if (parts.length === 2) {
+        execType = parts[0];
+        itemIndex = parseInt(parts[1], 10);
+      }
     }
     
-    // Calculate actual row number
-    const actualRow = startRow + data.itemIndex;
+    if (execType !== 'exec1' && execType !== 'exec2') {
+      return { success: false, error: 'Invalid execType: ' + execType };
+    }
+    
+    if (isNaN(itemIndex)) {
+      return { success: false, error: 'Invalid item index' };
+    }
+    
+    const startRow = execType === 'exec1' ? CONFIG.EXEC1_START_ROW : CONFIG.EXEC2_START_ROW;
+    const endRow = execType === 'exec1' ? CONFIG.EXEC1_END_ROW : CONFIG.EXEC2_END_ROW;
+    const actualRow = startRow + itemIndex;
     
     if (actualRow > endRow) {
       return { success: false, error: 'Item index out of range' };
     }
     
-    // Update the row
-    // Assuming columns: A=Description, B=ETA, C=Owner, D=Link, E=HotTopic, F=Comments, G=LinkedMeetingId, H=MeetingType, I=DueDate
-    const range = sheet.getRange(actualRow, 1, 1, 9);
-    const values = [[
+    // Update columns A-D and G (comment). Preserve calculated columns.
+    sheet.getRange(actualRow, 1, 1, 4).setValues([[
       data.description || '',
       data.eta || '',
       data.owner || '',
-      data.link || '',
-      data.hotTopic ? 'TRUE' : 'FALSE',
-      data.comments || '',
-      data.linkedMeetingId || '',
-      data.meetingType || '',
-      data.dueDate || ''
-    ]];
+      data.link || ''
+    ]]);
+    sheet.getRange(actualRow, 7).setValue(data.comments || '');
     
-    range.setValues(values);
-    
-    // Update hyperlink in Column D if provided
     if (data.link) {
-      const linkCell = sheet.getRange(actualRow, 4); // Column D
+      const linkCell = sheet.getRange(actualRow, 4);
       linkCell.setFormula('=HYPERLINK("' + data.link + '", "Link to File")');
     }
     
@@ -1680,11 +1685,11 @@ function updateDeliverable(data) {
  */
 function deleteDeliverable(data) {
   try {
-    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
-    const sheet = ss.getSheetByName(CONFIG.SHEET_NAME);
+    const ss = SpreadsheetApp.openById(CONFIG.DELIVERABLES_SHEET_ID);
+    const sheet = ss.getSheetByName(CONFIG.DELIVERABLES_TAB_NAME);
     
     if (!sheet) {
-      return { success: false, error: 'Sheet not found: ' + CONFIG.SHEET_NAME };
+      return { success: false, error: 'Sheet not found: ' + CONFIG.DELIVERABLES_TAB_NAME };
     }
     
     // Determine the row range based on execType
@@ -1707,7 +1712,7 @@ function deleteDeliverable(data) {
     }
     
     // Clear the row (don't delete to preserve row numbers)
-    const range = sheet.getRange(actualRow, 1, 1, 9);
+    const range = sheet.getRange(actualRow, 1, 1, 7);
     range.clearContent();
     
     Logger.log('✅ Deleted deliverable at row: ' + actualRow);
@@ -1726,11 +1731,11 @@ function deleteDeliverable(data) {
  */
 function addDeliverable(data) {
   try {
-    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
-    const sheet = ss.getSheetByName(CONFIG.SHEET_NAME);
+    const ss = SpreadsheetApp.openById(CONFIG.DELIVERABLES_SHEET_ID);
+    const sheet = ss.getSheetByName(CONFIG.DELIVERABLES_TAB_NAME);
     
     if (!sheet) {
-      return { success: false, error: 'Sheet not found: ' + CONFIG.SHEET_NAME };
+      return { success: false, error: 'Sheet not found: ' + CONFIG.DELIVERABLES_TAB_NAME };
     }
     
     // Determine the row range based on execType
@@ -1762,24 +1767,20 @@ function addDeliverable(data) {
     }
     
     // Add the new item
-    const newRange = sheet.getRange(emptyRow, 1, 1, 9);
+    const newRange = sheet.getRange(emptyRow, 1, 1, 4);
     const newValues = [[
       data.description || '',
       data.eta || '',
       data.owner || '',
-      data.link || '',
-      data.hotTopic ? 'TRUE' : 'FALSE',
-      data.comments || '',
-      data.linkedMeetingId || '',
-      data.meetingType || '',
-      data.dueDate || ''
+      data.link || ''
     ]];
     
     newRange.setValues(newValues);
+    sheet.getRange(emptyRow, 7).setValue(data.comments || '');
     
     // Set hyperlink in Column D if provided
     if (data.link) {
-      const linkCell = sheet.getRange(emptyRow, 4); // Column D
+      const linkCell = sheet.getRange(emptyRow, 4);
       linkCell.setFormula('=HYPERLINK("' + data.link + '", "Link to File")');
     }
     

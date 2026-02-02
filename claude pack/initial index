@@ -2189,6 +2189,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     loadDashboardData();
     
+    // Render calendar shell immediately for the Meetings page
+    try {
+        renderMeetingsCalendar();
+    } catch (e) {
+        console.error('❌ Error rendering meetings calendar:', e);
+    }
+    
     // Auto-refresh every 5 minutes
     setInterval(loadDashboardData, 300000);
 });
@@ -2284,6 +2291,14 @@ function onDataLoaded(data) {
     } catch (e) {
         console.error('❌ Error rendering recurring meetings dropdown:', e);
     }
+
+    try {
+        if (currentPage === 'meetings') {
+            switchMeetingsView(currentMeetingsView);
+        }
+    } catch (e) {
+        console.error('❌ Error rendering meetings view:', e);
+    }
     
     console.log('🎉 All rendering complete!');
 }
@@ -2340,7 +2355,7 @@ function renderDeliverables() {
                     <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 1.5rem; height: 1.5rem;">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
-                    Mike's/Sarcone's Upcoming Deliverables & Hot Topics
+                    Mike's/Sarcone's Upcoming Deliverables
                 </h2>
                 <button class="icon-btn" title="Add Deliverable" onclick="openAddItemModal('exec1')">
                     <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2360,7 +2375,7 @@ function renderDeliverables() {
                     <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 1.5rem; height: 1.5rem;">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
                     </svg>
-                    DK's Governance Upcoming Deliverables & Hot Topics
+                    DK's Governance Upcoming Deliverables
                 </h2>
                 <button class="icon-btn" title="Add Deliverable" onclick="openAddItemModal('exec2')">
                     <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2403,10 +2418,9 @@ function renderDeliverablesTable(deliverables) {
                         data-owner="${item.owner || ''}" 
                         data-link="${item.linkedMaterials || ''}" 
                         data-subtext="${item.subtext || ''}" 
-                        data-hot-topic="${item.isHotTopic || false}"
                         style="cursor: pointer;">
                         <td>
-                            <span class="item-description" style="display: inline;">${item.isHotTopic ? '🔥 ' : ''}${escapeHtml(item.description)}</span>
+                            <span class="item-description" style="display: inline;">${escapeHtml(item.description)}</span>
                             ${item.subtext ? `<div class="item-subtext" style="font-style: italic; color: var(--color-slate-500); margin-top: 0.25rem; font-size: 0.75rem;">${escapeHtml(item.subtext)}</div>` : ''}
                         </td>
                         <td style="white-space: nowrap;">${item.eta && item.eta.trim() ? item.eta : '—'}</td>
@@ -2443,9 +2457,8 @@ function attachDeliverableClickHandlers() {
             const owner = this.dataset.owner;
             const link = this.dataset.link;
             const subtext = this.dataset.subtext;
-            const isHotTopic = this.dataset.hotTopic === 'true';
             
-            openDeliverableModal(id, description, eta, owner, link, subtext, isHotTopic);
+            openDeliverableModal(id, description, eta, owner, link, subtext);
         };
     });
 }
@@ -4132,7 +4145,7 @@ function switchPage(pageName) {
 // DELIVERABLE MODAL FUNCTIONALITY
 // ============================================================================
 
-function openDeliverableModal(id, description, eta, owner, link, comments, isHotTopic) {
+function openDeliverableModal(id, description, eta, owner, link, comments) {
     let modal = document.getElementById('deliverableModal');
     if (!modal) {
         createDeliverableModal();
@@ -4145,7 +4158,6 @@ function openDeliverableModal(id, description, eta, owner, link, comments, isHot
     document.getElementById('modalOwner').value = owner || '';
     document.getElementById('modalLink').value = link || '';
     document.getElementById('modalComments').value = comments || '';
-    document.getElementById('modalHotTopic').checked = isHotTopic === true || isHotTopic === 'true';
     
     // Store ID for saving
     modal.dataset.itemId = id;
@@ -4202,13 +4214,6 @@ function createDeliverableModal() {
                         <textarea id="modalComments" style="width: 100%; min-height: 80px; padding: 0.75rem; border: 1px solid var(--color-slate-300); border-radius: 0.5rem; font-size: 0.875rem; resize: vertical;" placeholder="Add comments or notes..."></textarea>
                     </div>
                     
-                    <!-- Hot Topic Checkbox -->
-                    <div style="margin-bottom: 1.5rem;">
-                        <label style="display: flex; align-items: center; gap: 0.5rem; font-weight: 600; color: var(--color-slate-700); cursor: pointer;">
-                            <input type="checkbox" id="modalHotTopic" style="width: 18px; height: 18px; cursor: pointer;">
-                            <span>🔥 Mark as Hot Topic</span>
-                        </label>
-                    </div>
                 </div>
                 <div class="modal-footer" style="padding: 1.5rem; border-top: 1px solid var(--color-slate-200); background: var(--color-slate-50); display: flex; gap: 1rem; justify-content: space-between;">
                     <button onclick="deleteDeliverable()" style="padding: 0.75rem 1.5rem; border: 1px solid var(--color-red-300); background: white; color: var(--color-red-700); border-radius: 0.5rem; cursor: pointer; font-weight: 600; font-size: 0.875rem;">
@@ -4258,25 +4263,33 @@ function addLinkedDocument() {
 function saveDeliverableChanges() {
     const modal = document.getElementById('deliverableModal');
     const itemId = modal.dataset.itemId;
+    const idParts = itemId ? itemId.split('-') : [];
+    const execType = idParts.length === 2 ? idParts[0] : '';
+    const itemIndex = idParts.length === 2 ? parseInt(idParts[1], 10) : null;
     
     const data = {
         id: itemId,
+        execType: execType,
+        itemIndex: itemIndex,
         description: document.getElementById('modalDescription').value,
         eta: document.getElementById('modalETA').value,
         owner: document.getElementById('modalOwner').value,
         link: document.getElementById('modalLink').value,
-        comments: document.getElementById('modalComments').value,
-        isHotTopic: document.getElementById('modalHotTopic').checked
+        comments: document.getElementById('modalComments').value
     };
     
     console.log('Saving deliverable changes:', data);
     
     if (typeof google !== 'undefined' && google.script) {
         google.script.run
-            .withSuccessHandler(() => {
-                alert('Changes saved successfully!');
-                closeDeliverableModal();
-                loadDashboardData();
+            .withSuccessHandler((result) => {
+                if (result && result.success) {
+                    alert('Changes saved successfully!');
+                    closeDeliverableModal();
+                    loadDashboardData();
+                } else {
+                    alert('Error saving changes: ' + (result && result.error ? result.error : 'Unknown error'));
+                }
             })
             .withFailureHandler((error) => {
                 alert('Error saving changes: ' + error);
@@ -4398,12 +4411,6 @@ function createAddItemModal() {
                         <textarea id="addItemComments" rows="3" style="width: 100%; padding: 0.5rem; border: 1px solid var(--color-slate-300); border-radius: 0.375rem;"></textarea>
                     </div>
                     
-                    <div style="margin-bottom: 1rem;">
-                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                            <input type="checkbox" id="addItemHotTopic" style="width: 16px; height: 16px;">
-                            <span style="font-weight: 600; color: var(--color-slate-700);">🔥 Mark as Hot Topic</span>
-                        </label>
-                    </div>
                     
                     <div style="display: flex; gap: 1rem; justify-content: flex-end; padding-top: 1rem; border-top: 1px solid var(--color-slate-200);">
                         <button type="button" onclick="closeAddItemModal()" style="padding: 0.5rem 1rem; border: 1px solid var(--color-slate-300); background: white; border-radius: 0.375rem; cursor: pointer; font-weight: 500;">
@@ -4436,8 +4443,7 @@ function submitNewItem(event) {
         eta: document.getElementById('addItemETA').value,
         owner: document.getElementById('addItemOwner').value,
         link: document.getElementById('addItemLink').value,
-        comments: document.getElementById('addItemComments').value,
-        isHotTopic: document.getElementById('addItemHotTopic').checked
+        comments: document.getElementById('addItemComments').value
     };
     
     // Call backend to add item
