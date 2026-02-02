@@ -939,8 +939,9 @@ function getMeetings() {
     
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const twoWeeksLater = new Date(today);
-    twoWeeksLater.setDate(today.getDate() + 14);
+    // Show meetings from start of previous month to end of next year for full calendar support
+    const rangeStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    const rangeEnd = new Date(today.getFullYear() + 1, 11, 31);
     
     const meetings = [];
     
@@ -948,32 +949,16 @@ function getMeetings() {
       const row = values[i];
       if (!row[CONFIG.MEETING_COLUMNS.MEETING_NAME]) continue;
       
-      // Skip completed meetings
-      if (row[CONFIG.MEETING_COLUMNS.COMPLETE] === true) continue;
-      
       // ONLY show approved meetings
       if (row[CONFIG.MEETING_COLUMNS.APPROVED] !== true) continue;
       
-      // CLEAN DATA: Filter out noisy meetings
-      const title = (row[CONFIG.MEETING_COLUMNS.MEETING_NAME] || '').toLowerCase();
-      const attendees = row[CONFIG.MEETING_COLUMNS.ATTENDEES] || '';
-      const link = row[CONFIG.MEETING_COLUMNS.DELIVERABLE_LINK] || '';
-      const description = (row[CONFIG.MEETING_COLUMNS.DESCRIPTION] || '').toLowerCase();
-      
-      // 1. Remove meetings with no attendees AND no meeting link
-      const hasLink = link.includes('http') || description.includes('webex') || description.includes('zoom') || description.includes('meet.google');
-      if (!attendees && !hasLink) continue;
-      
-      // 2. Remove lunch, DNS, and 1:1s
-      if (title.includes('lunch') || title.includes('dns') || title.includes('1:1')) continue;
-      
       const meetingDate = new Date(row[CONFIG.MEETING_COLUMNS.DATE]);
-      const dayOfWeek = meetingDate.getDay();
       
       // Skip weekends (0 = Sunday, 6 = Saturday)
+      const dayOfWeek = meetingDate.getDay();
       if (dayOfWeek === 0 || dayOfWeek === 6) continue;
 
-      if (meetingDate >= today && meetingDate <= twoWeeksLater) {
+      if (meetingDate >= rangeStart && meetingDate <= rangeEnd) {
         meetings.push({
           id: row[CONFIG.MEETING_COLUMNS.EVENT_ID] || 'meeting-' + i,
           title: row[CONFIG.MEETING_COLUMNS.MEETING_NAME] || '',
