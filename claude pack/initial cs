@@ -1088,6 +1088,7 @@ function getMeetings() {
           attendees: row[CONFIG.MEETING_COLUMNS.ATTENDEES] || '',
           isHotTopic: isHotTopic,
           hotTopicLevel: hotTopicLevel,
+          colorId: colorMeta,
           prepRequired: row[CONFIG.MEETING_COLUMNS.PREP_REQUIRED] === true,
           deliverableLink: row[CONFIG.MEETING_COLUMNS.DELIVERABLE_LINK] || '',
           notes: row[CONFIG.MEETING_COLUMNS.NOTES] || '',
@@ -1934,13 +1935,78 @@ function generateWeeklySchedulePDF(options) {
     body.setMarginLeft(36);
     body.setMarginRight(36);
     
-    // Title
-    const title = body.appendParagraph(weekTitle || 'Two-Week Executive Schedule');
-    title.setHeading(DocumentApp.ParagraphHeading.HEADING1);
-    title.setForegroundColor('#ffffff');
-    title.setBackgroundColor('#000000');
-    title.setAlignment(DocumentApp.HorizontalAlignment.LEFT);
-    title.setSpacingAfter(12);
+    // Compute current two-week range (Mon-Fri + next week)
+    const scheduleToday = new Date();
+    scheduleToday.setHours(0, 0, 0, 0);
+    const scheduleDay = scheduleToday.getDay();
+    const scheduleMondayOffset = scheduleDay === 0 ? -6 : 1 - scheduleDay;
+    const monday = new Date(scheduleToday);
+    monday.setDate(scheduleToday.getDate() + scheduleMondayOffset);
+    const secondWeekMonday = new Date(monday);
+    secondWeekMonday.setDate(monday.getDate() + 7);
+    const rangeEnd = new Date(secondWeekMonday);
+    rangeEnd.setDate(secondWeekMonday.getDate() + 4);
+    const rangeLabel = Utilities.formatDate(monday, Session.getScriptTimeZone(), 'MMMM d') +
+      '-' + Utilities.formatDate(rangeEnd, Session.getScriptTimeZone(), 'd, yyyy');
+    const generatedLabel = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'MMM d, yyyy');
+
+    // Header row (title left, generated right)
+    const headerTable = body.appendTable([['', '']]);
+    headerTable.setBorderWidth(0);
+    const headerRow = headerTable.getRow(0);
+    const titleCell = headerRow.getCell(0);
+    const generatedCell = headerRow.getCell(1);
+    titleCell.setWidth(420);
+    generatedCell.setWidth(200);
+    
+    const titlePara = titleCell.appendParagraph('Executive Calendar Report');
+    titlePara.setFontSize(16);
+    titlePara.setBold(true);
+    titlePara.setForegroundColor('#cc0000');
+    
+    const dateRangePara = titleCell.appendParagraph(rangeLabel);
+    dateRangePara.setFontSize(9);
+    dateRangePara.setForegroundColor('#555555');
+    
+    const generatedPara = generatedCell.appendParagraph('Generated: ' + generatedLabel);
+    generatedPara.setFontSize(8);
+    generatedPara.setAlignment(DocumentApp.HorizontalAlignment.RIGHT);
+    generatedPara.setForegroundColor('#555555');
+    
+    // Red divider
+    const divider = body.appendParagraph('');
+    divider.setBorderBottom(true);
+    divider.setBorderColor('#cc0000');
+    divider.setSpacingAfter(10);
+
+    // Executive summary box
+    const summaryTable = body.appendTable([['', '']]);
+    summaryTable.setBorderWidth(0);
+    const summaryRow = summaryTable.getRow(0);
+    const barCell = summaryRow.getCell(0);
+    const summaryCell = summaryRow.getCell(1);
+    barCell.setBackgroundColor('#cc0000');
+    barCell.setWidth(6);
+    summaryCell.setBackgroundColor('#f8fafc');
+    summaryCell.setWidth(600);
+    
+    const summaryHeader = summaryCell.appendParagraph('EXECUTIVE SUMMARY');
+    summaryHeader.setFontSize(9);
+    summaryHeader.setBold(true);
+    summaryHeader.setForegroundColor('#cc0000');
+    summaryHeader.setSpacingAfter(6);
+    
+    const totalMeetings = meetings.length;
+    const hotCount = meetings.filter(m => m.isHotTopic).length;
+    const prepCount = meetings.filter(m => m.prepRequired).length;
+    const conflictCount = meetings.filter(m => m.hasConflict).length;
+    const summaryText = notes && notes.trim()
+      ? notes.trim()
+      : `Two-week outlook includes ${totalMeetings} meetings, ${hotCount} hot topics, ${prepCount} prep-required sessions, and ${conflictCount} conflicts.`;
+    const summaryPara = summaryCell.appendParagraph(summaryText);
+    summaryPara.setFontSize(9);
+    summaryPara.setForegroundColor('#111111');
+    summaryPara.setSpacingAfter(8);
     
     // Group meetings by date
     const meetingsByDate = {};
@@ -1974,128 +2040,135 @@ function generateWeeklySchedulePDF(options) {
     }
     
     const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+
+    // Key action items (deliverables due this week for Mike Sarcone)
+    const actionHeader = body.appendParagraph('☑ KEY ACTION ITEMS');
+    actionHeader.setFontSize(10);
+    actionHeader.setBold(true);
+    actionHeader.setForegroundColor('#cc0000');
+    actionHeader.setSpacingAfter(6);
+    
+    const exec1Deliverables = getExec1Deliverables();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const weekDay = today.getDay();
+    const mondayOffset = weekDay === 0 ? -6 : 1 - weekDay;
+    const weekStart = new Date(today);
+    weekStart.setDate(today.getDate() + mondayOffset);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 4);
+    
+    const weekDeliverables = exec1Deliverables.filter(d => {
+      if (!d.etaFull) return false;
+      const due = new Date(d.etaFull + 'T00:00:00');
+      return due >= weekStart && due <= weekEnd;
+    });
+    
+    if (weekDeliverables.length === 0) {
+      const none = body.appendParagraph('No deliverables due this week.');
+      none.setFontSize(9);
+      none.setForegroundColor('#666666');
+      none.setSpacingAfter(10);
+    } else {
+      weekDeliverables.sort((a, b) => a.etaFull.localeCompare(b.etaFull));
+      weekDeliverables.forEach(d => {
+        const dueLabel = d.eta || d.etaFull;
+        const ownerLabel = d.owner ? ` (${d.owner})` : '';
+        const overdueLabel = d.isOverdue ? ' — OVERDUE' : '';
+        const itemText = `${dueLabel} — ${d.description}${ownerLabel}${overdueLabel}`;
+        const item = body.appendListItem(itemText);
+        item.setFontSize(9);
+        if (d.linkedMaterials) {
+          try {
+            item.editAsText().setLinkUrl(0, itemText.length - 1, d.linkedMaterials);
+          } catch (e) {
+            Logger.log('Link set failed for deliverable: ' + e);
+          }
+        }
+      });
+      body.appendParagraph('').setSpacingAfter(10);
+    }
     
     function appendWeekTable(monday, label) {
       if (label) {
         const labelPara = body.appendParagraph(label);
-        labelPara.setHeading(DocumentApp.ParagraphHeading.HEADING2);
+        labelPara.setFontSize(9);
+        labelPara.setBold(true);
         labelPara.setSpacingAfter(6);
       }
       
       const table = body.appendTable();
+      table.setBorderWidth(0);
+      
       const headerRow = table.appendTableRow();
-      
-      for (let i = 0; i < 5; i++) {
-        const dayDate = new Date(monday);
-        dayDate.setDate(monday.getDate() + i);
-        const dateStr = Utilities.formatDate(dayDate, Session.getScriptTimeZone(), 'MM/dd');
-        const dayName = dayNames[i];
-        
-        const cell = headerRow.appendTableCell(dayName + ' (' + dateStr + ')');
-        cell.setBackgroundColor('#cc0000');
-        cell.getChild(0).asParagraph().setForegroundColor('#ffffff');
-        cell.getChild(0).asParagraph().setAlignment(DocumentApp.HorizontalAlignment.CENTER);
-        cell.setWidth(144); // 720/5 = 144 points per column
-      }
-      
       const contentRow = table.appendTableRow();
       
       for (let i = 0; i < 5; i++) {
         const dayDate = new Date(monday);
         dayDate.setDate(monday.getDate() + i);
+        const dateShort = Utilities.formatDate(dayDate, Session.getScriptTimeZone(), 'MMM d');
         const dateStr = Utilities.formatDate(dayDate, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+        const dayName = dayNames[i];
         
-        const cell = contentRow.appendTableCell();
-        cell.setVerticalAlignment(DocumentApp.VerticalAlignment.TOP);
+        const headerCell = headerRow.appendTableCell(`${dayName}\n${dateShort}`);
+        headerCell.setBackgroundColor('#000000');
+        headerCell.getChild(0).asParagraph().setForegroundColor('#ffffff');
+        headerCell.getChild(0).asParagraph().setFontSize(8);
+        headerCell.getChild(0).asParagraph().setBold(true);
+        headerCell.setWidth(144);
+        
+        const bodyCell = contentRow.appendTableCell();
+        bodyCell.setVerticalAlignment(DocumentApp.VerticalAlignment.TOP);
         
         const dayMeetings = meetingsByDate[dateStr] || [];
         dayMeetings.sort((a, b) => (a.time24 || '').localeCompare(b.time24 || ''));
         
         if (dayMeetings.length === 0) {
-          cell.setText('No meetings');
-          cell.getChild(0).asParagraph().setForegroundColor('#999999');
+          const empty = bodyCell.appendParagraph('No meetings');
+          empty.setFontSize(8);
+          empty.setForegroundColor('#999999');
         } else {
-          cell.clear();
-          
           dayMeetings.forEach((m, idx) => {
-            const timePara = cell.appendParagraph(m.time || 'TBD');
+            const timePara = bodyCell.appendParagraph(m.time || 'TBD');
             timePara.setBold(true);
-            timePara.setFontSize(9);
+            timePara.setFontSize(8);
             
-            const namePara = cell.appendParagraph(m.title);
-            namePara.setFontSize(8);
+            const titlePara = bodyCell.appendParagraph((includePrepMeetings && m.prepRequired ? '[PREP] ' : '') + m.title);
+            titlePara.setFontSize(8);
             
-            if (m.isHotTopic || m.prepRequired) {
-              namePara.setForegroundColor('#cc0000');
+            if (m.hotTopicLevel === 'urgent') {
+              titlePara.setForegroundColor('#cc0000');
+            } else if (m.hotTopicLevel === 'must-attend') {
+              titlePara.setForegroundColor('#ea580c');
+            } else if (m.isHotTopic) {
+              titlePara.setForegroundColor('#444444');
             }
             
             if (m.hasConflict) {
-              const conflictPara = cell.appendParagraph('⚠️ CONFLICT');
+              const conflictPara = bodyCell.appendParagraph('⚠ CONFLICT');
               conflictPara.setForegroundColor('#ff6600');
               conflictPara.setFontSize(7);
               conflictPara.setBold(true);
-              namePara.setBackgroundColor('#fff3cd');
-            }
-            
-            if (includePrepMeetings && m.prepRequired) {
-              const prepPara = cell.appendParagraph('📋 Prep Required');
-              prepPara.setFontSize(7);
-              prepPara.setForegroundColor('#0066cc');
             }
             
             if (idx < dayMeetings.length - 1) {
-              cell.appendParagraph('');
+              bodyCell.appendParagraph('');
             }
           });
         }
       }
     }
     
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const day = today.getDay();
-    const mondayOffset = day === 0 ? -6 : 1 - day;
-    const monday = new Date(today);
-    monday.setDate(today.getDate() + mondayOffset);
-    const secondWeekMonday = new Date(monday);
-    secondWeekMonday.setDate(monday.getDate() + 7);
+    // Two-week calendar view
+    const calendarHeader = body.appendParagraph('TWO-WEEK CALENDAR VIEW');
+    calendarHeader.setFontSize(10);
+    calendarHeader.setBold(true);
+    calendarHeader.setForegroundColor('#cc0000');
+    calendarHeader.setSpacingAfter(6);
     
     appendWeekTable(monday, 'Week 1');
     body.appendParagraph('');
     appendWeekTable(secondWeekMonday, 'Week 2');
-    
-    if (notes && notes.trim()) {
-      body.appendParagraph('');
-      const notesHeader = body.appendParagraph('Notes & Commentary');
-      notesHeader.setHeading(DocumentApp.ParagraphHeading.HEADING2);
-      body.appendParagraph(notes.trim());
-    }
-    
-    // Add agenda items section if provided
-    if (agendaItems && Object.keys(agendaItems).length > 0) {
-      body.appendParagraph('');
-      
-      const bottomTable = body.appendTable();
-      const bottomRow = bottomTable.appendTableRow();
-      
-      for (const [sectionName, items] of Object.entries(agendaItems)) {
-        const cell = bottomRow.appendTableCell();
-        cell.setBackgroundColor('#000000');
-        
-        const headerPara = cell.appendParagraph(sectionName);
-        headerPara.setForegroundColor('#ffffff');
-        headerPara.setBold(true);
-        headerPara.setFontSize(10);
-        
-        if (items && items.length > 0) {
-          items.forEach(item => {
-            const itemPara = cell.appendParagraph('• ' + item);
-            itemPara.setForegroundColor('#ffffff');
-            itemPara.setFontSize(8);
-          });
-        }
-      }
-    }
     
     // Add Verizon footer
     body.appendParagraph('');

@@ -35,6 +35,10 @@
             --color-orange-700: #c2410c;
             --color-blue-100: #dbeafe;
             --color-blue-600: #2563eb;
+            --color-purple-100: #ede9fe;
+            --color-purple-600: #7c3aed;
+            --color-yellow-100: #fef3c7;
+            --color-yellow-700: #b45309;
             --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
 
@@ -1295,86 +1299,232 @@
             font-size: 0.7rem;
             cursor: pointer;
             transition: all 0.2s;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+            white-space: normal;
         }
 
         .calendar-meeting-item:hover {
             background-color: var(--color-blue-200);
         }
 
+        .calendar-meeting-time {
+            font-weight: 700;
+            font-size: 0.7rem;
+            color: var(--color-slate-700);
+        }
+
+        .calendar-meeting-title {
+            font-weight: 600;
+            font-size: 0.75rem;
+            color: var(--color-slate-900);
+            line-height: 1.2;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .meeting-color-11 {
+            background-color: var(--color-red-100);
+            border-left: 3px solid var(--color-red-600);
+        }
+
+        .meeting-color-6 {
+            background-color: var(--color-orange-100);
+            border-left: 3px solid var(--color-orange-600);
+        }
+
+        .meeting-color-7 {
+            background-color: var(--color-purple-100);
+            border-left: 3px solid var(--color-purple-600);
+        }
+
+        .meeting-color-5 {
+            background-color: var(--color-yellow-100);
+            border-left: 3px solid var(--color-yellow-700);
+        }
+
+        .meeting-color-10 {
+            background-color: var(--color-green-100);
+            border-left: 3px solid var(--color-green-600);
+        }
+
+        .meeting-color-9 {
+            background-color: var(--color-blue-100);
+            border-left: 3px solid var(--color-blue-600);
+        }
+
+        .meeting-color-8 {
+            background-color: var(--color-slate-100);
+            border-left: 3px solid var(--color-slate-400);
+        }
+
+        .meeting-title-card {
+            padding: 0.35rem 0.5rem;
+            border-radius: 0.375rem;
+        }
+
+        .meeting-hot-urgent {
+            background-color: var(--color-red-100);
+            border-left-color: var(--color-red-600);
+        }
+
+        .meeting-hot-attend {
+            background-color: var(--color-orange-100);
+            border-left-color: var(--color-orange-600);
+        }
+
+        .meeting-hot-default {
+            background-color: var(--color-slate-100);
+            border-left-color: var(--color-slate-500);
+        }
+
         /* 90 Day View */
         .ninety-day-container {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 0.75rem;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 1.5rem;
         }
 
-        .month-column {
-            background-color: var(--color-slate-50);
-            border-radius: 0.5rem;
-            padding: 0.5rem;
-        }
-
-        .month-column-header {
-            font-size: 0.875rem;
-            font-weight: 700;
-            color: var(--color-slate-800);
-            margin-bottom: 0.5rem;
-            padding-bottom: 0.35rem;
-            border-bottom: 2px solid var(--color-red-600);
-        }
-
-        .month-meeting-item {
-            display: flex;
-            gap: 0.5rem;
-            padding: 0.4rem 0.5rem;
-            background-color: white;
-            border-radius: 0.375rem;
-            margin-bottom: 0.35rem;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .month-meeting-item:hover {
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .month-meeting-date {
-            font-size: 1rem;
-            font-weight: 700;
-            color: var(--color-slate-400);
-            min-width: 24px;
-        }
-
-        .month-meeting-info {
-            flex: 1;
-        }
-
-        .month-meeting-title {
-            font-weight: 600;
-            color: var(--color-slate-800);
-            font-size: 0.8rem;
-        }
-
-        .month-meeting-time {
-            font-size: 0.7rem;
-            color: var(--color-slate-500);
-        }
-
-        .month-column-body {
-            max-height: 180px;
-            overflow-y: auto;
-            padding-right: 0.25rem;
-        }
-
-        .month-meeting-line {
-            font-size: 0.75rem;
-            color: var(--color-slate-700);
-            white-space: nowrap;
+        .month-card {
+            background: white;
+            border-radius: 0.75rem;
+            border: 1px solid var(--color-slate-200);
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
             overflow: hidden;
-            text-overflow: ellipsis;
+            display: flex;
+            flex-direction: column;
+            min-height: 320px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .month-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 16px 30px rgba(15, 23, 42, 0.12);
+        }
+
+        .month-ribbon {
+            background: linear-gradient(90deg, var(--color-red-700), var(--color-red-600));
+            color: white;
+            text-align: center;
+            padding: 0.75rem 0.5rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            position: relative;
+        }
+
+        .month-ribbon::before,
+        .month-ribbon::after {
+            content: "";
+            position: absolute;
+            bottom: -10px;
+            width: 0;
+            height: 0;
+            border-style: solid;
+        }
+
+        .month-ribbon::before {
+            left: 0;
+            border-width: 10px 10px 0 0;
+            border-color: #991b1b transparent transparent transparent;
+        }
+
+        .month-ribbon::after {
+            right: 0;
+            border-width: 10px 0 0 10px;
+            border-color: #991b1b transparent transparent transparent;
+        }
+
+        .month-card-body {
+            padding: 1rem 1.25rem 1.25rem;
+            overflow-y: auto;
+        }
+
+        .month-events {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+
+        .month-event {
+            display: grid;
+            grid-template-columns: 36px 10px 1fr;
+            gap: 0.5rem;
+            align-items: start;
+            padding: 0.5rem 0.4rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.2s ease;
+        }
+
+        .month-event:hover {
+            background-color: var(--color-slate-50);
+            transform: translateX(2px);
+        }
+
+        .month-event-date {
+            font-weight: 800;
+            font-size: 0.95rem;
+            color: var(--color-slate-700);
+            text-align: right;
+        }
+
+        .month-event-pipe {
+            color: var(--color-slate-300);
+            text-align: center;
+            font-weight: 700;
+        }
+
+        .month-event-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--color-slate-900);
+            line-height: 1.35;
+        }
+
+        .month-event-meta {
+            font-size: 0.75rem;
+            color: var(--color-slate-500);
+            margin-top: 0.2rem;
+        }
+
+        .month-event.hot {
+            background-color: var(--color-red-50);
+        }
+
+        .month-event.meeting-hot-urgent {
+            background-color: var(--color-red-50);
+        }
+
+        .month-event.meeting-hot-attend {
+            background-color: var(--color-orange-100);
+        }
+
+        .month-event.meeting-hot-default {
+            background-color: var(--color-slate-100);
+        }
+
+        .month-event.hot .month-event-title {
+            color: var(--color-red-700);
+            font-weight: 700;
+        }
+
+        .month-event.prep .month-event-title {
+            color: var(--color-blue-600);
+        }
+
+        .month-empty {
+            color: var(--color-slate-400);
+            font-size: 0.85rem;
+            text-align: center;
+            padding: 1.5rem 0;
+            font-style: italic;
         }
 
         /* Side by Side Deliverables */
@@ -2190,6 +2340,10 @@
                 
                 <div>
                     <label style="display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 0.75rem;">Select Meetings</label>
+                    <label style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; font-size: 0.875rem; cursor: pointer;">
+                        <input type="checkbox" id="pdfSelectAll" checked>
+                        <span>Select all</span>
+                    </label>
                     <div id="pdfMeetingsList" style="max-height: 300px; overflow-y: auto; border: 1px solid var(--color-slate-200); border-radius: 0.375rem; padding: 0.75rem;">
                         <div class="loading-spinner" style="text-align: center;">Loading meetings...</div>
                     </div>
@@ -2779,7 +2933,7 @@ function renderScheduleGrid(dates, meetingsByDate, weekLabel, showExport) {
                     const dayName = dayNames[d.getDay() - 1] || dayNames[idx % 5];
                     const dayNumber = d.getDate();
                     const isToday = isDateToday(date);
-                    const dayMeetings = (meetingsByDate[date] || []).filter(m => m.isHotTopic);
+                    const dayMeetings = meetingsByDate[date] || [];
                     
                     // Sort meetings by time
                     dayMeetings.sort((a, b) => timeToMinutes(a.time24 || a.time) - timeToMinutes(b.time24 || b.time));
@@ -2794,8 +2948,9 @@ function renderScheduleGrid(dates, meetingsByDate, weekLabel, showExport) {
                                 ${dayMeetings.length > 0 ? dayMeetings.map(m => {
                                     const hasConflict = dayMeetings.some(other => other.id !== m.id && hasTimeConflict(m, other));
                                     const conflictStyle = hasConflict ? 'background-color: var(--color-red-100); border-left: 3px solid var(--color-red-600);' : '';
-                                    return `
-                                    <div class="schedule-item ${m.category && m.category.toLowerCase().includes('work') ? 'deep-work' : ''}" 
+                    const hotClass = getMeetingColorClass(m);
+                    return `
+                                    <div class="schedule-item ${m.category && m.category.toLowerCase().includes('work') ? 'deep-work' : ''} ${hotClass}" 
                                          style="margin-bottom: 0; cursor: pointer; border: 1px solid var(--color-slate-100); box-shadow: 0 1px 2px rgba(0,0,0,0.05); padding: 0.5rem; border-radius: 0; ${conflictStyle}"
                                          onclick="openMeetingDetails('${m.id}')">
                                         <div style="display: flex; align-items: center; gap: 0.5rem;">
@@ -2881,6 +3036,27 @@ function renderHotTopicBadge(meeting) {
     const label = level === 'urgent' ? 'Urgent/Critical' : (level === 'must-attend' ? 'Must Attend' : 'Hot Topic');
     const cls = level === 'urgent' ? 'hot-topic-urgent' : (level === 'must-attend' ? 'hot-topic-attend' : 'hot-topic-default');
     return `<span class="hot-topic-badge ${cls}">🔥 ${label}</span>`;
+}
+
+function getMeetingColorClass(meeting) {
+    if (!meeting) return '';
+    const id = String(meeting.colorId || '').trim();
+    if (!id) {
+        if (meeting.hotTopicLevel === 'urgent') return 'meeting-color-11';
+        if (meeting.hotTopicLevel === 'must-attend') return 'meeting-color-6';
+        if (meeting.isHotTopic) return 'meeting-hot-default';
+        return '';
+    }
+    switch (id) {
+        case '11': return 'meeting-color-11';
+        case '6': return 'meeting-color-6';
+        case '7': return 'meeting-color-7';
+        case '5': return 'meeting-color-5';
+        case '10': return 'meeting-color-10';
+        case '9': return 'meeting-color-9';
+        case '8': return 'meeting-color-8';
+        default: return '';
+    }
 }
 
 // ============================================================================
@@ -3147,9 +3323,11 @@ function renderMeetingsScheduling() {
                 </tr>
             </thead>
             <tbody>
-                ${meetings.length > 0 ? meetings.map(m => `
+                ${meetings.length > 0 ? meetings.map(m => {
+                    const colorClass = getMeetingColorClass(m);
+                    return `
                     <tr>
-                        <td class="item-description">${escapeHtml(m.title)}</td>
+                        <td><div class="item-description meeting-title-card ${colorClass}">${escapeHtml(m.title)}</div></td>
                         <td>${m.dateFormatted}</td>
                         <td>${formatTimeStandard(m.time)}</td>
                         <td style="font-size: 0.75rem;">${escapeHtml(m.attendees)}</td>
@@ -3157,7 +3335,8 @@ function renderMeetingsScheduling() {
                             <button class="btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="openMeetingDetails('${m.id}')">Details</button>
                         </td>
                     </tr>
-                `).join('') : '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--color-slate-400);">No meetings scheduled</td></tr>'}
+                `;
+                }).join('') : '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--color-slate-400);">No meetings scheduled</td></tr>'}
             </tbody>
         </table>
     `;
@@ -4006,9 +4185,10 @@ function renderMeetingsCalendar() {
         
         dayMeetings.sort((a, b) => timeToMinutes(a.time24 || a.time) - timeToMinutes(b.time24 || b.time));
         dayMeetings.slice(0, 3).forEach(m => {
-            html += `<div class="calendar-meeting-item" onclick="openMeetingModal('${m.id}')">
-                <span style="font-weight: 600;">${formatTimeStandard(m.time)}</span> ${escapeHtml(m.title.substring(0, 15))}${m.title.length > 15 ? '...' : ''}
-                ${m.isHotTopic ? '<span style="margin-left: 0.25rem;">🔥</span>' : ''}
+            const hotClass = getMeetingColorClass(m);
+            html += `<div class="calendar-meeting-item ${hotClass}" onclick="openMeetingModal('${m.id}')">
+                <div class="calendar-meeting-time">${formatTimeStandard(m.time)}</div>
+                <div class="calendar-meeting-title">${escapeHtml(m.title)}</div>
             </div>`;
         });
         
@@ -4075,6 +4255,7 @@ function renderMeetingsList() {
     `;
     
     sorted.forEach(m => {
+        const colorClass = getMeetingColorClass(m);
         html += `
             <tr onclick="openMeetingModal('${m.id}')" style="cursor: pointer;">
                 <td><input type="checkbox" onclick="event.stopPropagation();"></td>
@@ -4083,7 +4264,7 @@ function renderMeetingsList() {
                     <div style="font-size: 0.75rem; color: var(--color-slate-500);">${formatTimeStandard(m.time)}</div>
                 </td>
                 <td>
-                    <div class="item-description">${escapeHtml(m.title)}</div>
+                    <div class="item-description meeting-title-card ${colorClass}">${escapeHtml(m.title)}</div>
                     ${m.isHotTopic ? `<div style="margin-top: 0.25rem;">${renderHotTopicBadge(m)}</div>` : ''}
                     ${m.category ? `<div style="font-size: 0.7rem; color: var(--color-slate-400);">${m.category}</div>` : ''}
                 </td>
@@ -4146,13 +4327,14 @@ function render90DayView() {
         });
         
         html += `
-            <div class="month-column">
-                <div class="month-column-header">${mo.name}</div>
-                <div class="month-column-body">
+            <div class="month-card">
+                <div class="month-ribbon">${mo.name}</div>
+                <div class="month-card-body">
+                    <ul class="month-events">
         `;
         
         if (monthMeetings.length === 0) {
-            html += '<p style="color: var(--color-slate-400); font-size: 0.75rem; text-align: center; padding: 0.75rem;">No meetings scheduled</p>';
+            html += '<li class="month-empty">No meetings scheduled</li>';
         } else {
             // Sort meetings by date, then by time
             monthMeetings.sort((a, b) => {
@@ -4161,19 +4343,36 @@ function render90DayView() {
                 return timeToMinutes(a.time24 || a.time) - timeToMinutes(b.time24 || b.time);
             }).forEach(m => {
                 const d = new Date(m.date + 'T00:00:00'); // Use ISO string to avoid timezone issues
-            html += `
-                    <div class="month-meeting-item" onclick="openMeetingModal('${m.id}')" style="align-items: center;">
-                        <div class="month-meeting-date">${d.getDate()}</div>
-                        <div class="month-meeting-line">
-                            ${formatTimeStandard(m.time)} • ${escapeHtml(m.title)}
-                        </div>
-                        ${m.isHotTopic ? `<div style="margin-left: auto;">${renderHotTopicBadge(m)}</div>` : ''}
-                    </div>
+                const hotClass = getMeetingColorClass(m);
+                const itemClasses = [
+                    'month-event',
+                    hotClass,
+                    m.prepRequired ? 'prep' : ''
+                ].filter(Boolean).join(' ');
+                
+                const meta = [
+                    formatTimeStandard(m.time) || 'TBD',
+                    m.category ? escapeHtml(m.category) : ''
+                ].filter(Boolean).join(' • ');
+                
+                html += `
+                        <li class="${itemClasses}" onclick="openMeetingModal('${m.id}')">
+                            <span class="month-event-date">${d.getDate()}</span>
+                            <span class="month-event-pipe">|</span>
+                            <div>
+                                <div class="month-event-title">${escapeHtml(m.title)}</div>
+                                ${meta ? `<div class="month-event-meta">${meta}</div>` : ''}
+                            </div>
+                        </li>
                 `;
             });
         }
         
-        html += '</div></div>';
+        html += `
+                    </ul>
+                </div>
+            </div>
+        `;
     });
     
     html += '</div>';
@@ -4710,10 +4909,20 @@ function openPDFExportModal() {
     
     // Populate meetings list
     const meetingsList = document.getElementById('pdfMeetingsList');
+    const selectAllToggle = document.getElementById('pdfSelectAll');
     
     if (!dashboardData.meetings || dashboardData.meetings.length === 0) {
         meetingsList.innerHTML = '<p style="color: var(--color-slate-500); text-align: center; padding: 1rem;">No meetings available</p>';
+        if (selectAllToggle) {
+            selectAllToggle.checked = false;
+            selectAllToggle.indeterminate = false;
+            selectAllToggle.disabled = true;
+        }
         return;
+    }
+    
+    if (selectAllToggle) {
+        selectAllToggle.disabled = false;
     }
     
     // Detect conflicts
@@ -4766,6 +4975,29 @@ function openPDFExportModal() {
             </div>
         </label>
     `).join('');
+
+    const meetingCheckboxes = Array.from(document.querySelectorAll('.pdf-meeting-checkbox'));
+    const updateSelectAllState = () => {
+        if (!selectAllToggle) return;
+        const checkedCount = meetingCheckboxes.filter(cb => cb.checked).length;
+        selectAllToggle.checked = checkedCount === meetingCheckboxes.length;
+        selectAllToggle.indeterminate = checkedCount > 0 && checkedCount < meetingCheckboxes.length;
+    };
+    
+    if (selectAllToggle) {
+        selectAllToggle.onchange = () => {
+            meetingCheckboxes.forEach(cb => {
+                cb.checked = selectAllToggle.checked;
+            });
+            updateSelectAllState();
+        };
+    }
+    
+    meetingCheckboxes.forEach(cb => {
+        cb.onchange = updateSelectAllState;
+    });
+    
+    updateSelectAllState();
 }
 
 function closePDFExportModal() {
