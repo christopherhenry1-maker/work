@@ -2536,15 +2536,10 @@ function renderSchedule() {
                     </svg>
                     Executive Schedule - 2 Week View
                 </h2>
-                <button class="icon-btn" onclick="openPDFExportModal()" title="Export to PDF">
-                    <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                    </svg>
-                </button>
             </div>
             <div class="schedule-wrapper">
-                ${renderScheduleGrid(firstWeekDates, meetingsByDate, 'Week 1')}
-                ${secondWeekDates.length > 0 ? renderScheduleGrid(secondWeekDates, meetingsByDate, 'Week 2') : ''}
+                ${renderScheduleGrid(firstWeekDates, meetingsByDate, 'Week 1', true)}
+                ${secondWeekDates.length > 0 ? renderScheduleGrid(secondWeekDates, meetingsByDate, 'Week 2', false) : ''}
             </div>
         </div>
     `;
@@ -2552,13 +2547,23 @@ function renderSchedule() {
     container.innerHTML = html;
 }
 
-function renderScheduleGrid(dates, meetingsByDate, weekLabel) {
+function renderScheduleGrid(dates, meetingsByDate, weekLabel, showExport) {
     if (dates.length === 0) return '';
     
     const dayNames = ['MON', 'TUE', 'WED', 'THU', 'FRI'];
     
     return `
         <div style="margin-bottom: 2rem;">
+            <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 1rem; margin-bottom: 0.5rem; align-items: center;">
+                <div style="grid-column: 1 / span 4; font-size: 0.75rem; font-weight: 700; color: var(--color-slate-600); letter-spacing: 0.08em; text-transform: uppercase;">${weekLabel}</div>
+                <div style="grid-column: 5; text-align: right;">
+                    ${showExport ? `
+                        <button class="btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.75rem;" onclick="openPDFExportModal()">
+                            Export
+                        </button>
+                    ` : ''}
+                </div>
+            </div>
             <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 1rem;">
                 ${dates.map((date, idx) => {
                     const d = new Date(date + 'T00:00:00');
@@ -4117,8 +4122,8 @@ function switchPage(pageName) {
     
     if (pageName === 'meetings') {
         switchMeetingsView(currentMeetingsView);
-    } else if (pageName === 'documents' && document.getElementById('documentRepository').innerHTML.includes('Loading')) {
-        renderDocumentRepository();
+    } else if (pageName === 'documents') {
+        renderDocumentsPage();
     }
 }
 
