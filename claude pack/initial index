@@ -780,6 +780,27 @@
             height: 0.75rem;
         }
 
+        .toast {
+            position: fixed;
+            right: 1.5rem;
+            bottom: 1.5rem;
+            background: var(--color-slate-900);
+            color: white;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            z-index: 2000;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
         .mt-2 { margin-top: 0.5rem; }
         .mt-3 { margin-top: 0.75rem; }
         .mt-6 { margin-top: 1.5rem; }
@@ -3489,6 +3510,21 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+function showToast(message) {
+    const existing = document.getElementById('toastMessage');
+    if (existing) existing.remove();
+    const toast = document.createElement('div');
+    toast.id = 'toastMessage';
+    toast.className = 'toast';
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.add('show'));
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 200);
+    }, 2500);
+}
+
 function formatTime12h(timeStr) {
     return formatTimeStandard(timeStr);
 }
@@ -4424,7 +4460,7 @@ function saveDeliverableChanges() {
         google.script.run
             .withSuccessHandler((result) => {
                 if (result && result.success) {
-                    alert('Changes saved successfully!');
+                    showToast('Changes saved successfully');
                     closeDeliverableModal();
                     loadDashboardData();
                 } else {
@@ -4436,7 +4472,7 @@ function saveDeliverableChanges() {
             })
             .updateDeliverable(data);
     } else {
-        alert('Changes saved successfully! (Demo mode)');
+        showToast('Changes saved successfully');
         closeDeliverableModal();
     }
 }
@@ -4589,7 +4625,7 @@ function submitNewItem(event) {
     // Call backend to add item
     google.script.run
         .withSuccessHandler(() => {
-            alert('Item added successfully!');
+            showToast('Item added successfully');
             closeAddItemModal();
             loadDashboardData(); // Refresh data
         })

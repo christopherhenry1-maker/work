@@ -1643,18 +1643,25 @@ function addNewItem(itemData) {
     
     // Determine target section
     let targetStartRow;
+    let targetEndRow;
     if (itemData.section === 'exec1') {
       targetStartRow = CONFIG.EXEC1_START_ROW;
+      targetEndRow = CONFIG.EXEC1_END_ROW;
     } else if (itemData.section === 'exec2') {
       targetStartRow = CONFIG.EXEC2_START_ROW;
+      targetEndRow = CONFIG.EXEC2_END_ROW;
     } else {
       throw new Error('Unknown section: ' + itemData.section);
     }
     
     // Find first empty row in section
     let targetRow = targetStartRow;
-    while (sheet.getRange(targetRow, 1).getValue() !== '') {
+    while (targetRow <= targetEndRow && sheet.getRange(targetRow, 1).getValue() !== '') {
       targetRow++;
+    }
+    
+    if (targetRow > targetEndRow) {
+      throw new Error('No empty rows available in section: ' + itemData.section);
     }
     
     // Prepare row data (adjust columns based on your sheet structure)
