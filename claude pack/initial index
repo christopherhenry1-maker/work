@@ -3686,28 +3686,37 @@ function renderMeetingsCalendar() {
     
     // Find the first Monday of the display (may be in previous month)
     let firstDayOfWeek = firstDay.getDay(); // 0=Sun, 1=Mon, etc.
-    // Adjust so Monday = 1
-    let mondayOffset = (firstDayOfWeek === 0) ? -6 : 1 - firstDayOfWeek;
     
-    // Previous month days (only weekdays before the 1st)
+    // Previous month days to fill the first row
     const prevMonth = new Date(year, month, 0);
     const prevMonthDays = prevMonth.getDate();
-    for (let offset = mondayOffset; offset < 0; offset++) {
-        const prevDay = prevMonthDays + offset + 1;
-        // Check if this previous month day is a weekday
-        const prevDate = new Date(year, month - 1, prevDay);
-        if (prevDate.getDay() !== 0 && prevDate.getDay() !== 6) {
-            html += `<div class="calendar-month-day other-month"><span class="calendar-day-number" style="color: var(--color-slate-300);">${prevDay}</span></div>`;
+    
+    // We always start the grid on Monday.
+    // Calculate how many days from the previous week we need to show to fill the first row.
+    // If firstDay is Sunday(0), the previous Monday was 6 days ago.
+    // If firstDay is Monday(1), we need 0 days from prev month.
+    // If firstDay is Tuesday(2), we need 1 day (Monday).
+    let daysToFill = (firstDayOfWeek === 0) ? 6 : firstDayOfWeek - 1;
+    
+    for (let i = daysToFill; i > 0; i--) {
+        const d = new Date(year, month, 1);
+        d.setDate(d.getDate() - i);
+        
+        // Only add a cell if it's a weekday (Mon-Fri)
+        if (d.getDay() !== 0 && d.getDay() !== 6) {
+            html += `<div class="calendar-month-day other-month"><span class="calendar-day-number" style="color: var(--color-slate-300);">${d.getDate()}</span></div>`;
         }
     }
     
-    // Current month days (weekdays only)
+    // Current month days
     for (let day = 1; day <= totalDays; day++) {
         const currentDate = new Date(year, month, day);
         const dayOfWeek = currentDate.getDay();
         
-        // Skip weekends (0 = Sunday, 6 = Saturday)
-        if (dayOfWeek === 0 || dayOfWeek === 6) continue;
+        // Skip weekends - they don't get a cell in a 5-column grid
+        if (dayOfWeek === 0 || dayOfWeek === 6) {
+            continue;
+        }
         
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         const isToday = isCurrentMonth && today.getDate() === day;
