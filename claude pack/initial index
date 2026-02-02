@@ -2569,7 +2569,7 @@ function renderScheduleGrid(dates, meetingsByDate, weekLabel) {
                     dayMeetings.sort((a, b) => (a.time || '').localeCompare(b.time || ''));
 
                     return `
-                        <div class="schedule-day${new Date(date) < new Date(new Date().toDateString()) ? ' past' : ''}" style="background: white; border: 1px solid var(--color-slate-200); border-radius: 0; overflow: hidden; display: flex; flex-direction: column; min-height: 300px;">
+                        <div class="schedule-day${new Date(date + 'T00:00:00') < new Date(new Date().setHours(0,0,0,0)) ? ' past' : ''}" style="background: white; border: 1px solid var(--color-slate-200); border-radius: 0; overflow: hidden; display: flex; flex-direction: column; min-height: 300px;">
                             <div style="padding: 0.5rem; text-align: center; ${isToday ? 'background-color: var(--color-red-700); color: white;' : 'background-color: var(--color-slate-50); color: var(--color-slate-600);'}">
                                 <div style="font-size: 0.5rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">${dayName}</div>
                                 <div style="font-size: 1rem; font-weight: 800; margin-top: 0.15rem;">${dayNumber}</div>
