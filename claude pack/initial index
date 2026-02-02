@@ -2071,7 +2071,7 @@
             </div>
             <div class="modal-footer" style="display: flex; gap: 0.75rem; justify-content: flex-end; padding: 1rem 1.5rem; border-top: 1px solid var(--color-slate-200);">
                 <button class="btn-secondary" onclick="closePDFExportModal()">Cancel</button>
-                <button class="btn-primary" onclick="generatePDFExport()">
+                <button class="btn-primary" onclick="generatePDFExport(this)">
                     <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 1rem; height: 1rem; margin-right: 0.5rem;">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                     </svg>
@@ -4482,7 +4482,7 @@ function closePDFExportModal() {
     modal.classList.add('hidden');
 }
 
-function generatePDFExport() {
+function generatePDFExport(btn) {
     const title = document.getElementById('pdfWeekTitle').value || 'Weekly Schedule';
     const includePrepMeetings = document.getElementById('pdfPrepMeetings').checked;
     const selectedMeetings = Array.from(document.querySelectorAll('.pdf-meeting-checkbox:checked')).map(cb => cb.value);
@@ -4493,10 +4493,10 @@ function generatePDFExport() {
     }
     
     // Show loading state
-    const exportBtn = event.target;
+    const exportBtn = btn || document.querySelector('#pdfExportModal .btn-primary');
     const originalText = exportBtn.innerHTML;
     exportBtn.disabled = true;
-    exportBtn.innerHTML = '<svg class="icon" style="width: 1rem; height: 1rem; animation: spin 1s linear infinite;"></svg> Generating...';
+    exportBtn.innerHTML = 'Generating...';
     
     // Use jsPDF and html2canvas to generate PDF
     setTimeout(async () => {
@@ -4504,8 +4504,14 @@ function generatePDFExport() {
             const { jsPDF } = window.jspdf;
             const pdf = new jsPDF('p', 'mm', 'a4');
             
-            // Filter selected meetings
-            const meetings = dashboardData.meetings.filter(m => selectedMeetings.includes(m.id));
+            // Filter and sort selected meetings
+            const meetings = dashboardData.meetings
+                .filter(m => selectedMeetings.includes(m.id))
+                .sort((a, b) => {
+                    const dateCompare = new Date(a.date + 'T00:00:00') - new Date(b.date + 'T00:00:00');
+                    if (dateCompare !== 0) return dateCompare;
+                    return (a.rawTime || a.time || '').localeCompare(b.rawTime || b.time || '');
+                });
             
             // Add title
             pdf.setFontSize(18);
