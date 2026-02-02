@@ -1463,6 +1463,44 @@ function createAgenda(meetingData) {
   }
 }
 
+/**
+ * Attach agenda document link to a meeting row
+ */
+function attachAgendaToMeeting(data) {
+  try {
+    const { meetingId, documentUrl, documentName } = data;
+    if (!meetingId || !documentUrl) {
+      return { success: false, error: 'Missing meetingId or documentUrl' };
+    }
+    
+    const sheet = getSheet(CONFIG.MEETINGS_SHEET_ID, CONFIG.MEETINGS_TAB_NAME);
+    if (!sheet) {
+      return { success: false, error: 'Meetings sheet not found' };
+    }
+    
+    const values = sheet.getDataRange().getValues();
+    let targetRow = -1;
+    for (let i = 1; i < values.length; i++) {
+      if (String(values[i][CONFIG.MEETING_COLUMNS.EVENT_ID] || '') === String(meetingId)) {
+        targetRow = i + 1;
+        break;
+      }
+    }
+    
+    if (targetRow === -1) {
+      return { success: false, error: 'Meeting not found' };
+    }
+    
+    const linkCell = sheet.getRange(targetRow, CONFIG.MEETING_COLUMNS.DELIVERABLE_LINK + 1);
+    linkCell.setFormula('=HYPERLINK(\"' + documentUrl + '\", \"' + (documentName || 'Agenda') + '\")');
+    
+    return { success: true };
+  } catch (error) {
+    Logger.log('Error attaching agenda: ' + error);
+    return { success: false, error: error.toString() };
+  }
+}
+
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================

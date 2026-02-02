@@ -171,6 +171,40 @@
             gap: 0.75rem;
         }
 
+        .header-search {
+            position: relative;
+        }
+
+        .header-search input {
+            width: 260px;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 0.5rem;
+            background: rgba(255, 255, 255, 0.08);
+            color: white;
+            font-size: 0.8rem;
+        }
+
+        .header-search input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .header-search-results {
+            position: absolute;
+            right: 0;
+            top: calc(100% + 0.5rem);
+            width: 360px;
+            max-height: 280px;
+            overflow-y: auto;
+            background: white;
+            border: 1px solid var(--color-slate-200);
+            border-radius: 0.75rem;
+            box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+            z-index: 2000;
+            padding: 0.5rem;
+            display: none;
+        }
+
         .icon-btn {
             background: none;
             border: none;
@@ -1330,9 +1364,17 @@
         }
 
         .month-column-body {
-            max-height: 220px;
+            max-height: 180px;
             overflow-y: auto;
             padding-right: 0.25rem;
+        }
+
+        .month-meeting-line {
+            font-size: 0.75rem;
+            color: var(--color-slate-700);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         /* Side by Side Deliverables */
@@ -1780,11 +1822,10 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v6h6M20 20v-6h-6M5 15a7 7 0 0012.906 1.5M19 9A7 7 0 006.094 7.5"/>
                 </svg>
             </button>
-            <button class="icon-btn" title="Search">
-                <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                </svg>
-            </button>
+            <div class="header-search">
+                <input type="text" id="meetingSearchInput" placeholder="Search meetings..." />
+                <div id="meetingSearchResults" class="header-search-results"></div>
+            </div>
             <button class="icon-btn" title="Notifications">
                 <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
@@ -1978,17 +2019,6 @@
                         <!-- Deliverables Section -->
                         <div id="deliverablesSection">
                             <div class="loading-message">Loading dashboard data...</div>
-                        </div>
-
-                        <!-- Meeting Search -->
-                        <div class="card mt-6">
-                            <div class="card-header">
-                                <h2 class="card-title">Search Meetings & Events</h2>
-                            </div>
-                            <div style="padding: 1rem;">
-                                <input type="text" id="meetingSearchInput" placeholder="Search by title, attendee, date, or keyword..." style="width: 100%; padding: 0.75rem; border: 1px solid var(--color-slate-300); border-radius: 0.5rem; font-size: 0.875rem;">
-                                <div id="meetingSearchResults" style="margin-top: 0.75rem; max-height: 240px; overflow-y: auto;"></div>
-                            </div>
                         </div>
 
                         <!-- 2-Week Schedule -->
@@ -2417,7 +2447,8 @@ function initMeetingSearch() {
     const renderResults = (query) => {
         const q = query.trim().toLowerCase();
         if (!q) {
-            results.innerHTML = '<div style="color: var(--color-slate-400); font-size: 0.85rem;">Start typing to search meetings…</div>';
+            results.innerHTML = '<div style="color: var(--color-slate-500); font-size: 0.85rem; padding: 0.5rem;">Start typing to search meetings…</div>';
+            results.style.display = 'block';
             return;
         }
         
@@ -2435,12 +2466,13 @@ function initMeetingSearch() {
         }).slice(0, 25);
         
         if (matches.length === 0) {
-            results.innerHTML = '<div style="color: var(--color-slate-400); font-size: 0.85rem;">No matches found.</div>';
+            results.innerHTML = '<div style="color: var(--color-slate-500); font-size: 0.85rem; padding: 0.5rem;">No matches found.</div>';
+            results.style.display = 'block';
             return;
         }
         
         results.innerHTML = matches.map(m => `
-            <div style="padding: 0.5rem 0.25rem; border-bottom: 1px solid var(--color-slate-100); cursor: pointer;" onclick="openMeetingModal('${m.id}')">
+            <div style="padding: 0.5rem 0.25rem; border-bottom: 1px solid var(--color-slate-100); cursor: pointer;" onclick="openMeetingModal('${m.id}'); document.getElementById('meetingSearchResults').style.display='none';">
                 <div style="font-weight: 600; font-size: 0.9rem; color: var(--color-slate-800);">${escapeHtml(m.title)}</div>
                 <div style="font-size: 0.75rem; color: var(--color-slate-500);">
                     ${m.dateFormatted || m.date} • ${formatTimeStandard(m.time)} ${m.isHotTopic ? '• 🔥 Hot Topic' : ''}
@@ -2448,12 +2480,21 @@ function initMeetingSearch() {
                 ${m.attendees ? `<div style="font-size: 0.7rem; color: var(--color-slate-400); margin-top: 0.15rem;">${escapeHtml(m.attendees)}</div>` : ''}
             </div>
         `).join('');
+        results.style.display = 'block';
     };
     
     input.oninput = () => {
         if (meetingSearchTimer) clearTimeout(meetingSearchTimer);
         meetingSearchTimer = setTimeout(() => renderResults(input.value), 150);
     };
+
+    input.onfocus = () => renderResults(input.value);
+    document.addEventListener('click', (e) => {
+        if (!results || !input) return;
+        if (!results.contains(e.target) && e.target !== input) {
+            results.style.display = 'none';
+        }
+    });
     
     renderResults('');
 }
@@ -3758,20 +3799,37 @@ function handleSaveAgenda() {
     google.script.run
         .withSuccessHandler(function(result) {
             if (result.success) {
-                closeAgendaModal();
-                
-                // Reset form
-                agendaTopics = [''];
-                agendaLink = '';
-                document.getElementById('recurringMeetingSelect').value = '';
-                document.getElementById('agendaDate').value = '';
-                document.getElementById('agendaDateSection').classList.add('hidden');
-                
-                // Show success message
-                alert(`✅ Agenda created successfully!\n\nDocument: ${result.documentName}\n\nOpening in new tab...`);
-                
-                // Open the document
-                window.open(result.documentUrl, '_blank');
+                google.script.run
+                    .withSuccessHandler(function(attachResult) {
+                        saveBtn.innerHTML = originalText;
+                        saveBtn.disabled = false;
+                        if (attachResult && attachResult.success) {
+                            showToast('Agenda created and attached');
+                        } else {
+                            showToast('Agenda created');
+                        }
+                        closeAgendaModal();
+                        
+                        // Reset form
+                        agendaTopics = [''];
+                        agendaLink = '';
+                        document.getElementById('recurringMeetingSelect').value = '';
+                        document.getElementById('agendaDate').value = '';
+                        document.getElementById('agendaDateSection').classList.add('hidden');
+                        loadDashboardData();
+                    })
+                    .withFailureHandler(function() {
+                        saveBtn.innerHTML = originalText;
+                        saveBtn.disabled = false;
+                        showToast('Agenda created');
+                        closeAgendaModal();
+                        loadDashboardData();
+                    })
+                    .attachAgendaToMeeting({
+                        meetingId: selectedRecurringMeetingId,
+                        documentUrl: result.documentUrl,
+                        documentName: result.documentName
+                    });
             } else {
                 alert('Error creating agenda: ' + result.error);
                 saveBtn.innerHTML = originalText;
@@ -4103,14 +4161,13 @@ function render90DayView() {
                 return timeToMinutes(a.time24 || a.time) - timeToMinutes(b.time24 || b.time);
             }).forEach(m => {
                 const d = new Date(m.date + 'T00:00:00'); // Use ISO string to avoid timezone issues
-                html += `
-                    <div class="month-meeting-item" onclick="openMeetingModal('${m.id}')">
+            html += `
+                    <div class="month-meeting-item" onclick="openMeetingModal('${m.id}')" style="align-items: center;">
                         <div class="month-meeting-date">${d.getDate()}</div>
-                        <div class="month-meeting-info">
-                            <div class="month-meeting-title">${escapeHtml(m.title)}</div>
-                            <div class="month-meeting-time">${formatTimeStandard(m.time)}</div>
-                            ${m.isHotTopic ? `<div style="margin-top: 0.25rem;">${renderHotTopicBadge(m)}</div>` : ''}
+                        <div class="month-meeting-line">
+                            ${formatTimeStandard(m.time)} • ${escapeHtml(m.title)}
                         </div>
+                        ${m.isHotTopic ? `<div style="margin-left: auto;">${renderHotTopicBadge(m)}</div>` : ''}
                     </div>
                 `;
             });
