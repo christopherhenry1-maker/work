@@ -48,10 +48,10 @@ const CONFIG = {
   // ✅ You CAN add more rows without updating END_ROW
   // ✅ You CAN move sections - just update START_ROW values below
   
-  EXEC1_START_ROW: 3,          // Exec 1 Deliverables (Skipping Title)
+  EXEC1_START_ROW: 3,          // Mike's/Sarcone's Deliverables (Skipping Title)
   EXEC1_END_ROW: 20,
   
-  EXEC2_START_ROW: 23,         // Exec 2 Deliverables (Skipping Title)
+  EXEC2_START_ROW: 23,         // DK's Governance Deliverables (Skipping Title)
   EXEC2_END_ROW: 35,
   
   ADMIN_START_ROW: 38,         // Admin & Settings Links (Skipping Title)
@@ -234,13 +234,13 @@ function initializeMeetingsSheet(sheet) {
  */
 function initializeDeliverablesSheet(sheet) {
   const sections = [
-    { row: 1, title: 'Exec 1 Upcoming Deliverables & Hot Topics' },
-    { row: 21, title: 'Exec 2 Governance Upcoming Deliverables & Hot Topics' },
+    { row: 1, title: 'Mike\'s/Sarcone\'s Upcoming Deliverables & Hot Topics' },
+    { row: 21, title: 'DK\'s Governance Upcoming Deliverables & Hot Topics' },
     { row: 36, title: 'Admin & Settings - Quick Links' },
     { row: 47, title: 'KPIs & Performance Dashboards' },
     { row: 61, title: 'Executive Updates - Completed Hot Topics Archive' },
     { row: 161, title: 'Document Repository' },
-    { row: 213, title: 'Exec 2\'s Completed Governance Items' }
+    { row: 213, title: 'DK\'s Completed Governance Items' }
   ];
   
   const columnHeaders = ['Description', 'ETA', 'Owner', 'Link to Materials', 'Days Left', '', 'Comment'];

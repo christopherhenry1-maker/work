@@ -1685,6 +1685,9 @@
 }
 
     </style>
+    <!-- PDF Export Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
     <div id="alertBanner" class="alert-banner">
@@ -1856,7 +1859,7 @@
                         <svg class="icon-xs accordion-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
                         </svg>
-                        Exec 2's Completed Items
+                        DK's Completed Items
                     </span>
                     <svg class="icon-xs accordion-icon chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
@@ -2330,7 +2333,7 @@ function renderDeliverables() {
                     <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 1.5rem; height: 1.5rem;">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
-                    Exec 1 Upcoming Deliverables & Hot Topics
+                    Mike's/Sarcone's Upcoming Deliverables & Hot Topics
                 </h2>
                 <button class="icon-btn" title="Add Deliverable" onclick="openAddItemModal('exec1')">
                     <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2350,7 +2353,7 @@ function renderDeliverables() {
                     <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 1.5rem; height: 1.5rem;">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
                     </svg>
-                    Exec 2 Governance Upcoming Deliverables & Hot Topics
+                    DK's Governance Upcoming Deliverables & Hot Topics
                 </h2>
                 <button class="icon-btn" title="Add Deliverable" onclick="openAddItemModal('exec2')">
                     <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2445,6 +2448,36 @@ function attachDeliverableClickHandlers() {
 // SCHEDULE RENDERING
 // ============================================================================
 
+/**
+ * Helper function to detect overlapping timestamps
+ * Returns true if two meetings overlap
+ */
+function hasTimeConflict(meeting1, meeting2) {
+    if (meeting1.date !== meeting2.date) return false;
+    
+    // Parse times
+    const parseTime = (timeStr) => {
+        if (!timeStr) return null;
+        const [hours, minutes] = timeStr.split(':').map(Number);
+        return hours * 60 + minutes;
+    };
+    
+    const start1 = parseTime(meeting1.time);
+    const start2 = parseTime(meeting2.time);
+    
+    if (!start1 || !start2) return false;
+    
+    // Assume 60 minute duration if not specified
+    const duration1 = meeting1.duration || 60;
+    const duration2 = meeting2.duration || 60;
+    
+    const end1 = start1 + duration1;
+    const end2 = start2 + duration2;
+    
+    // Check for overlap
+    return (start1 < end2 && end1 > start2);
+}
+
 function renderSchedule() {
     const container = document.getElementById('scheduleSection');
     
@@ -2474,11 +2507,9 @@ function renderSchedule() {
         meetingsByDate[meeting.date].push(meeting);
     });
     
-    // Generate 2 weeks of workdays (Mon-Fri) starting from the Monday of the current week
-    const today = new Date();
-    const currentDay = today.getDay();
-    const diff = today.getDate() - currentDay + (currentDay === 0 ? -6 : 1); // Adjust to Monday
-    const monday = new Date(today.setDate(diff));
+    // Generate 2 weeks of workdays (Mon-Fri) starting from February 2, 2026 (hardcoded)
+    const startDate = new Date('2026-02-02T00:00:00'); // Hardcoded to February 2, 2026
+    const monday = new Date(startDate);
     
     const firstWeekDates = [];
     const secondWeekDates = [];
@@ -2544,9 +2575,13 @@ function renderScheduleGrid(dates, meetingsByDate, weekLabel) {
                                 <div style="font-size: 1rem; font-weight: 800; margin-top: 0.15rem;">${dayNumber}</div>
                             </div>
                             <div style="padding: 0.75rem; flex: 1; display: flex; flex-direction: column; gap: 0.75rem;">
-                                ${dayMeetings.length > 0 ? dayMeetings.map(m => `
+                                ${dayMeetings.length > 0 ? dayMeetings.map(m => {
+                                    // Check for conflicts with other meetings on same day
+                                    const hasConflict = dayMeetings.some(other => other.id !== m.id && hasTimeConflict(m, other));
+                                    const conflictStyle = hasConflict ? 'background-color: var(--color-red-100); border-left: 3px solid var(--color-red-600);' : '';
+                                    return `
                                     <div class="schedule-item ${m.category && m.category.toLowerCase().includes('work') ? 'deep-work' : ''}" 
-                                         style="margin-bottom: 0; cursor: pointer; border: 1px solid var(--color-slate-100); box-shadow: 0 1px 2px rgba(0,0,0,0.05); padding: 0.5rem; border-radius: 0;"
+                                         style="margin-bottom: 0; cursor: pointer; border: 1px solid var(--color-slate-100); box-shadow: 0 1px 2px rgba(0,0,0,0.05); padding: 0.5rem; border-radius: 0; ${conflictStyle}"
                                          onclick="openMeetingDetails('${m.id}')">
                                         <div style="display: flex; align-items: center; gap: 0.5rem;">
                                             <div style="font-weight: 700; font-size: 0.7rem; color: var(--color-slate-900); white-space: nowrap;">${m.time}</div>
@@ -2558,7 +2593,8 @@ function renderScheduleGrid(dates, meetingsByDate, weekLabel) {
                                             ` : ''}
                                         </div>
                                     </div>
-                                `).join('') : `
+                                `;
+                                }).join('') : `
                                     <div style="flex: 1; display: flex; align-items: center; justify-content: center; color: var(--color-slate-300); font-size: 0.75rem; font-style: italic;">
                                         No events
                                     </div>
@@ -2731,7 +2767,6 @@ function renderSidebarLinks() {
                 </svg>
                 <div style="flex: 1;">
                     <div style="font-weight: 600;">${escapeHtml(update.name)}</div>
-                    ${update.dateAdded ? `<div style="font-size: 0.625rem; color: var(--color-slate-400);">${update.dateAdded}</div>` : ''}
                 </div>
             </a>
         `).join('');
@@ -2803,17 +2838,15 @@ function renderDocSection(title, items) {
                 <thead>
                     <tr>
                         <th>Description</th>
-                        <th>ETA</th>
                         <th>Owner</th>
-                        <th>Link</th>
-                        <th>Comment</th>
+                        <th>Materials</th>
+                        <th>Comments</th>
                     </tr>
                 </thead>
                 <tbody>
                     ${items && items.length > 0 ? items.map(item => `
                         <tr>
                             <td class="item-description">${escapeHtml(item.description || item.name || item.title)}</td>
-                            <td>${escapeHtml(item.eta || '')}</td>
                             <td>${escapeHtml(item.owner || '')}</td>
                             <td>
                                 <a href="${escapeHtml(item.link || item.url || '#')}" target="_blank" class="action-link">
@@ -4428,30 +4461,80 @@ function generatePDFExport() {
     exportBtn.disabled = true;
     exportBtn.innerHTML = '<svg class="icon" style="width: 1rem; height: 1rem; animation: spin 1s linear infinite;"></svg> Generating...';
     
-    // Call backend to generate PDF
-    google.script.run
-        .withSuccessHandler((result) => {
-            exportBtn.disabled = false;
-            exportBtn.innerHTML = originalText;
+    // Use jsPDF and html2canvas to generate PDF
+    setTimeout(async () => {
+        try {
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', 'a4');
             
-            if (result.success) {
-                // Open the PDF in a new tab
-                window.open(result.downloadUrl, '_blank');
-                closePDFExportModal();
-            } else {
-                alert('Error generating PDF: ' + (result.error || 'Unknown error'));
+            // Filter selected meetings
+            const meetings = dashboardData.meetings.filter(m => selectedMeetings.includes(m.id));
+            
+            // Add title
+            pdf.setFontSize(18);
+            pdf.setFont(undefined, 'bold');
+            pdf.text(title, 105, 20, { align: 'center' });
+            
+            let yPos = 35;
+            pdf.setFontSize(11);
+            pdf.setFont(undefined, 'normal');
+            
+            // Group meetings by date
+            const meetingsByDate = {};
+            meetings.forEach(m => {
+                if (!meetingsByDate[m.date]) meetingsByDate[m.date] = [];
+                meetingsByDate[m.date].push(m);
+            });
+            
+            // Render each date group
+            for (const date in meetingsByDate) {
+                const dateMeetings = meetingsByDate[date];
+                
+                // Date header
+                pdf.setFont(undefined, 'bold');
+                pdf.setFontSize(13);
+                pdf.text(dateMeetings[0].dateFormatted || date, 20, yPos);
+                yPos += 8;
+                
+                // Meetings for this date
+                pdf.setFont(undefined, 'normal');
+                pdf.setFontSize(10);
+                dateMeetings.forEach(m => {
+                    if (yPos > 270) {
+                        pdf.addPage();
+                        yPos = 20;
+                    }
+                    
+                    pdf.text(`${m.time || 'TBD'} - ${m.title}`, 25, yPos);
+                    yPos += 5;
+                    
+                    if (m.description) {
+                        pdf.setFontSize(9);
+                        const lines = pdf.splitTextToSize(m.description, 160);
+                        pdf.text(lines, 30, yPos);
+                        yPos += lines.length * 4 + 2;
+                        pdf.setFontSize(10);
+                    }
+                    
+                    yPos += 3;
+                });
+                
+                yPos += 5;
             }
-        })
-        .withFailureHandler((error) => {
+            
+            // Download PDF
+            pdf.save(`${title.replace(/[^a-z0-9]/gi, '_')}.pdf`);
+            
             exportBtn.disabled = false;
             exportBtn.innerHTML = originalText;
-            alert('Error: ' + error);
-        })
-        .generateWeeklySchedulePDF({
-            weekTitle: title,
-            includePrepMeetings: includePrepMeetings,
-            selectedMeetingIds: selectedMeetings
-        });
+            closePDFExportModal();
+        } catch (error) {
+            console.error('PDF generation error:', error);
+            alert('Error generating PDF: ' + error.message);
+            exportBtn.disabled = false;
+            exportBtn.innerHTML = originalText;
+        }
+    }, 100);
 }
 
 
