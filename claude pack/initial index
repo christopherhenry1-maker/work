@@ -2545,11 +2545,11 @@ function renderDeliverablesTable(deliverables) {
                         data-eta="${item.eta || ''}" 
                         data-owner="${item.owner || ''}" 
                         data-link="${item.linkedMaterials || ''}" 
-                        data-subtext="${item.subtext || ''}" 
+                        data-subtext="${item.comment || ''}" 
                         style="cursor: pointer;">
                         <td>
                             <span class="item-description" style="display: inline;">${escapeHtml(item.description)}</span>
-                            ${item.subtext ? `<div class="item-subtext" style="font-style: italic; color: var(--color-slate-500); margin-top: 0.25rem; font-size: 0.75rem;">${escapeHtml(item.subtext)}</div>` : ''}
+                            ${item.comment ? `<div class="item-subtext" style="font-style: italic; color: var(--color-slate-500); margin-top: 0.25rem; font-size: 0.75rem;">${escapeHtml(item.comment)}</div>` : ''}
                         </td>
                         <td style="white-space: nowrap;">${item.eta && item.eta.trim() ? item.eta : '—'}</td>
                         <td>${escapeHtml(item.owner) || '—'}</td>
