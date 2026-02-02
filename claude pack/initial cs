@@ -2042,7 +2042,7 @@ function generateWeeklySchedulePDF(options) {
     const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
     // Key action items (deliverables due this week for Mike Sarcone)
-    const actionHeader = body.appendParagraph('☑ KEY ACTION ITEMS');
+    const actionHeader = body.appendParagraph("☑ Sarcone's Upcoming Deliverables");
     actionHeader.setFontSize(10);
     actionHeader.setBold(true);
     actionHeader.setForegroundColor('#cc0000');
