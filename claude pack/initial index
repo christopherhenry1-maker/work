@@ -2000,57 +2000,88 @@
                         <div class="section-header">
                             <h2 class="section-title">DOCUMENTS & RESOURCES</h2>
                         </div>
-                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem;">
-                            <!-- Admin & Settings Column -->
-                            <div class="card">
-                                <div class="card-header">
-                                    <h2 class="card-title">Admin & Settings</h2>
-                                </div>
-                                <div id="documentsAdmin">
-                                    <div class="loading-message">Loading...</div>
-                                </div>
-                            </div>
-                            
-                            <!-- KPIs Column -->
-                            <div class="card">
-                                <div class="card-header">
-                                    <h2 class="card-title">KPIs & Performance</h2>
-                                </div>
-                                <div id="documentsKPIs">
-                                    <div class="loading-message">Loading...</div>
-                                </div>
-                            </div>
-                            
-                            <!-- Executive Updates Column -->
-                            <div class="card">
-                                <div class="card-header">
-                                    <h2 class="card-title">Executive Updates</h2>
-                                </div>
-                                <div id="documentsExecUpdates">
-                                    <div class="loading-message">Loading...</div>
-                                </div>
+
+                        <div class="sidebar-accordion" style="margin-bottom: 1rem;">
+                            <button class="accordion-header open" onclick="toggleAccordion(this)">
+                                <span class="accordion-title">
+                                    <svg class="icon-xs accordion-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                    </svg>
+                                    Admin & Settings
+                                </span>
+                                <svg class="icon-xs accordion-icon chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </button>
+                            <div class="accordion-content open" id="documentsAdmin">
+                                <div class="loading-message">Loading...</div>
                             </div>
                         </div>
-                        
-                        <!-- Document Repository Full Table -->
-                        <div class="card" style="margin-top: 1.5rem;">
-                            <div class="card-header">
-                                <h2 class="card-title">Document Repository</h2>
+
+                        <div class="sidebar-accordion" style="margin-bottom: 1.5rem;">
+                            <button class="accordion-header open" onclick="toggleAccordion(this)">
+                                <span class="accordion-title">
+                                    <svg class="icon-xs accordion-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                    </svg>
+                                    KPIs & Performance
+                                </span>
+                                <svg class="icon-xs accordion-icon chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </button>
+                            <div class="accordion-content open" id="documentsKPIs">
+                                <div class="loading-message">Loading...</div>
                             </div>
-                            <div class="table-wrapper">
-                                <table class="deliverables-table">
-                                    <thead>
-                                        <tr>
-                                            <th style="width: 35%;">DESCRIPTION</th>
-                                            <th style="width: 20%;">OWNER</th>
-                                            <th style="width: 30%;">LINK TO MATERIALS</th>
-                                            <th style="width: 15%;">COMMENTS</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="documentsRepository">
-                                        <tr><td colspan="4" class="loading-message">Loading...</td></tr>
-                                    </tbody>
-                                </table>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem;">
+                            <div class="sidebar-accordion">
+                                <button class="accordion-header open" onclick="toggleAccordion(this)">
+                                    <span class="accordion-title">
+                                        <svg class="icon-xs accordion-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                                        </svg>
+                                        Executive Updates
+                                    </span>
+                                    <svg class="icon-xs accordion-icon chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                    </svg>
+                                </button>
+                                <div class="accordion-content open" id="documentsExecUpdates">
+                                    <div class="loading-message">Loading...</div>
+                                </div>
+                            </div>
+
+                            <div class="sidebar-accordion">
+                                <button class="accordion-header open" onclick="toggleAccordion(this)">
+                                    <span class="accordion-title">
+                                        <svg class="icon-xs accordion-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                                        </svg>
+                                        Document Repository
+                                    </span>
+                                    <svg class="icon-xs accordion-icon chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                    </svg>
+                                </button>
+                                <div class="accordion-content open">
+                                    <div class="table-wrapper">
+                                        <table class="deliverables-table">
+                                            <thead>
+                                                <tr>
+                                                    <th style="width: 35%;">DESCRIPTION</th>
+                                                    <th style="width: 20%;">OWNER</th>
+                                                    <th style="width: 30%;">LINK TO MATERIALS</th>
+                                                    <th style="width: 15%;">COMMENTS</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="documentsRepository">
+                                                <tr><td colspan="4" class="loading-message">Loading...</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
