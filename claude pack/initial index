@@ -1948,6 +1948,17 @@
                             <div class="loading-message">Loading dashboard data...</div>
                         </div>
 
+                        <!-- Meeting Search -->
+                        <div class="card mt-6">
+                            <div class="card-header">
+                                <h2 class="card-title">Search Meetings & Events</h2>
+                            </div>
+                            <div style="padding: 1rem;">
+                                <input type="text" id="meetingSearchInput" placeholder="Search by title, attendee, date, or keyword..." style="width: 100%; padding: 0.75rem; border: 1px solid var(--color-slate-300); border-radius: 0.5rem; font-size: 0.875rem;">
+                                <div id="meetingSearchResults" style="margin-top: 0.75rem; max-height: 240px; overflow-y: auto;"></div>
+                            </div>
+                        </div>
+
                         <!-- 2-Week Schedule -->
                         <div id="scheduleSection" class="mt-6">
                             <div class="loading-message">Loading schedule...</div>
@@ -2323,6 +2334,12 @@ function onDataLoaded(data) {
     } catch (e) {
         console.error('❌ Error rendering schedule:', e);
     }
+
+    try {
+        initMeetingSearch();
+    } catch (e) {
+        console.error('❌ Error initializing meeting search:', e);
+    }
     
     try {
         console.log('Rendering sidebar links...');
@@ -2349,6 +2366,56 @@ function onDataLoaded(data) {
     }
     
     console.log('🎉 All rendering complete!');
+}
+
+let meetingSearchTimer = null;
+function initMeetingSearch() {
+    const input = document.getElementById('meetingSearchInput');
+    const results = document.getElementById('meetingSearchResults');
+    if (!input || !results) return;
+    
+    const renderResults = (query) => {
+        const q = query.trim().toLowerCase();
+        if (!q) {
+            results.innerHTML = '<div style="color: var(--color-slate-400); font-size: 0.85rem;">Start typing to search meetings…</div>';
+            return;
+        }
+        
+        const meetings = dashboardData.meetings || [];
+        const matches = meetings.filter(m => {
+            const hay = [
+                m.title,
+                m.description,
+                m.attendees,
+                m.dateFormatted,
+                m.date,
+                m.time
+            ].join(' ').toLowerCase();
+            return hay.includes(q);
+        }).slice(0, 25);
+        
+        if (matches.length === 0) {
+            results.innerHTML = '<div style="color: var(--color-slate-400); font-size: 0.85rem;">No matches found.</div>';
+            return;
+        }
+        
+        results.innerHTML = matches.map(m => `
+            <div style="padding: 0.5rem 0.25rem; border-bottom: 1px solid var(--color-slate-100); cursor: pointer;" onclick="openMeetingModal('${m.id}')">
+                <div style="font-weight: 600; font-size: 0.9rem; color: var(--color-slate-800);">${escapeHtml(m.title)}</div>
+                <div style="font-size: 0.75rem; color: var(--color-slate-500);">
+                    ${m.dateFormatted || m.date} • ${formatTimeStandard(m.time)} ${m.isHotTopic ? '• 🔥 Hot Topic' : ''}
+                </div>
+                ${m.attendees ? `<div style="font-size: 0.7rem; color: var(--color-slate-400); margin-top: 0.15rem;">${escapeHtml(m.attendees)}</div>` : ''}
+            </div>
+        `).join('');
+    };
+    
+    input.oninput = () => {
+        if (meetingSearchTimer) clearTimeout(meetingSearchTimer);
+        meetingSearchTimer = setTimeout(() => renderResults(input.value), 150);
+    };
+    
+    renderResults('');
 }
 
 function onDataError(error) {
