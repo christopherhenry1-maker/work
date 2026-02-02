@@ -4023,12 +4023,18 @@ document.addEventListener('DOMContentLoaded', function() {
     if (select) {
         select.addEventListener('change', function() {
             const section = document.getElementById('agendaDateSection');
+            const dateInput = document.getElementById('agendaDate');
             if (this.value) {
                 section.classList.remove('hidden');
                 selectedRecurringMeetingId = this.value;
-                selectedRecurringMeetingName = this.options[this.selectedIndex].text;
+                const selectedOption = this.options[this.selectedIndex];
+                selectedRecurringMeetingName = selectedOption.dataset.name || selectedOption.text;
+                if (selectedOption.dataset.date) {
+                    dateInput.value = selectedOption.dataset.date;
+                }
             } else {
                 section.classList.add('hidden');
+                if (dateInput) dateInput.value = '';
             }
         });
     }
@@ -4045,34 +4051,29 @@ function renderRecurringMeetingsDropdown() {
     const select = document.getElementById('recurringMeetingSelect');
     if (!select) return;
     
-    const meetings = dashboardData.recurringMeetings || [];
     const upcomingMeetings = (dashboardData.meetings || []).filter(m => m.date);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
-    const nextDateByName = {};
-    upcomingMeetings.forEach(m => {
-        const titleKey = (m.title || '').toLowerCase().trim();
-        if (!titleKey) return;
-        const dateObj = new Date((m.date || '') + 'T00:00:00');
-        if (isNaN(dateObj)) return;
-        if (dateObj < today) return;
-        const existing = nextDateByName[titleKey];
-        if (!existing || dateObj < existing) {
-            nextDateByName[titleKey] = dateObj;
-        }
-    });
+
+    const sortedMeetings = upcomingMeetings
+        .filter(m => {
+            const dateObj = new Date((m.date || '') + 'T00:00:00');
+            return !isNaN(dateObj) && dateObj >= today;
+        })
+        .sort((a, b) => {
+            const dateCompare = new Date(a.date) - new Date(b.date);
+            if (dateCompare !== 0) return dateCompare;
+            return timeToMinutes(a.time24 || a.time) - timeToMinutes(b.time24 || b.time);
+        });
     
     let html = '<option value="">-- Select Meeting --</option>';
-    meetings.forEach(meeting => {
-        const key = (meeting.name || '').toLowerCase().trim();
-        const nextDate = nextDateByName[key];
-        const dateLabel = nextDate
-            ? `${nextDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+    sortedMeetings.forEach(meeting => {
+        const dateObj = new Date((meeting.date || '') + 'T00:00:00');
+        const dateLabel = !isNaN(dateObj)
+            ? dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
             : '';
-        const display = dateLabel ? `${dateLabel} | ${meeting.name}` : meeting.name;
-        const style = dateLabel ? 'style="font-weight:700;"' : '';
-        html += `<option value="${escapeHtml(meeting.id)}" ${style}>${escapeHtml(display)}</option>`;
+        const display = dateLabel ? `${dateLabel} | ${meeting.title}` : meeting.title;
+        html += `<option value="${escapeHtml(meeting.id)}" data-date="${escapeHtml(meeting.date || '')}" data-name="${escapeHtml(meeting.title || '')}">${escapeHtml(display)}</option>`;
     });
     
     select.innerHTML = html;
