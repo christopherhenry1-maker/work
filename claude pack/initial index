@@ -3004,7 +3004,6 @@ function renderDeliverablesTable(deliverables) {
                         style="cursor: pointer;">
                         <td>
                             <span class="item-description" style="display: inline;">${escapeHtml(item.description)}</span>
-                            ${item.linkedMaterials ? ' ' + renderAgendaBadge({ deliverableLink: item.linkedMaterials }) : ''}
                             ${item.comment ? `<div class="item-subtext" style="font-style: italic; color: var(--color-slate-500); margin-top: 0.25rem; font-size: 0.75rem;">${escapeHtml(item.comment)}</div>` : ''}
                         </td>
                         <td style="white-space: nowrap;">${item.eta && item.eta.trim() ? item.eta : '—'}</td>
@@ -4245,6 +4244,8 @@ function handleSaveAgenda() {
     saveBtn.disabled = true;
     
     // Call backend to create Google Doc
+    const agendaSummary = topics.map(t => `• ${t.trim()}`).join('\n');
+    
     google.script.run
         .withSuccessHandler(function(result) {
             if (result.success) {
@@ -4277,7 +4278,8 @@ function handleSaveAgenda() {
                     .attachAgendaToMeeting({
                         meetingId: selectedRecurringMeetingId,
                         documentUrl: result.documentUrl,
-                        documentName: result.documentName
+                        documentName: result.documentName,
+                        agendaSummary: agendaSummary
                     });
             } else {
                 alert('Error creating agenda: ' + result.error);
@@ -4702,6 +4704,11 @@ function openMeetingModal(meetingId) {
                         <label class="form-label">📝 Notes & Commentary</label>
                         <textarea class="form-textarea" id="meetingNotesNew" placeholder="Add meeting notes, agenda items, or commentary...">${escapeHtml(meeting.notes || '')}</textarea>
                     </div>
+
+                    <div class="form-group">
+                        <label class="form-label">🗂️ Agenda Topics</label>
+                        <textarea class="form-textarea" id="meetingAgendaTopicsNew" placeholder="Add or edit agenda topics...">${escapeHtml((meeting.notes || '').includes('Agenda Topics:') ? (meeting.notes || '').split('Agenda Topics:')[1].trim() : '')}</textarea>
+                    </div>
                     
                     <div class="form-group">
                         <label class="form-label">Link Prep Session</label>
@@ -4782,6 +4789,7 @@ function saveMeetingChangesNew() {
     if (!currentMeetingId) return;
     
     const notes = document.getElementById('meetingNotesNew').value;
+    const agendaTopics = document.getElementById('meetingAgendaTopicsNew').value;
     const prepMeetingId = document.getElementById('prepMeetingSelectNew').value;
     const deliverableDueDate = document.getElementById('deliverableDueDateNew').value;
     const meetingType = document.getElementById('meetingTypeNew').value;
@@ -4792,6 +4800,7 @@ function saveMeetingChangesNew() {
     console.log('Saving meeting changes:', {
         meetingId: currentMeetingId,
         notes,
+        agendaTopics,
         prepMeetingId,
         deliverableDueDate,
         meetingType,
@@ -4812,6 +4821,7 @@ function saveMeetingChangesNew() {
             })
             .updateMeeting(currentMeetingId, {
                 notes,
+                agendaTopics,
                 prepMeetingId,
                 deliverableDueDate,
                 category: meetingType,

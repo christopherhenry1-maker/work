@@ -1469,7 +1469,7 @@ function createAgenda(meetingData) {
  */
 function attachAgendaToMeeting(data) {
   try {
-    const { meetingId, documentUrl, documentName } = data;
+    const { meetingId, documentUrl, documentName, agendaSummary } = data;
     if (!meetingId || !documentUrl) {
       return { success: false, error: 'Missing meetingId or documentUrl' };
     }
@@ -1494,10 +1494,61 @@ function attachAgendaToMeeting(data) {
     
     const linkCell = sheet.getRange(targetRow, CONFIG.MEETING_COLUMNS.DELIVERABLE_LINK + 1);
     linkCell.setFormula('=HYPERLINK(\"' + documentUrl + '\", \"' + (documentName || 'Agenda') + '\")');
+
+    if (agendaSummary && String(agendaSummary).trim()) {
+      const notesCell = sheet.getRange(targetRow, CONFIG.MEETING_COLUMNS.NOTES + 1);
+      const existing = notesCell.getValue() ? String(notesCell.getValue()).trim() : '';
+      const agendaBlock = 'Agenda Topics:\n' + agendaSummary;
+      const merged = existing ? (existing + '\n\n' + agendaBlock) : agendaBlock;
+      notesCell.setValue(merged);
+    }
     
     return { success: true };
   } catch (error) {
     Logger.log('Error attaching agenda: ' + error);
+    return { success: false, error: error.toString() };
+  }
+}
+
+/**
+ * Update meeting fields from the dashboard modal
+ */
+function updateMeeting(meetingId, updates) {
+  try {
+    if (!meetingId) return { success: false, error: 'Missing meetingId' };
+    
+    const sheet = getSheet(CONFIG.MEETINGS_SHEET_ID, CONFIG.MEETINGS_TAB_NAME);
+    if (!sheet) return { success: false, error: 'Meetings sheet not found' };
+    
+    const values = sheet.getDataRange().getValues();
+    let targetRow = -1;
+    for (let i = 1; i < values.length; i++) {
+      if (String(values[i][CONFIG.MEETING_COLUMNS.EVENT_ID] || '') === String(meetingId)) {
+        targetRow = i + 1;
+        break;
+      }
+    }
+    
+    if (targetRow === -1) return { success: false, error: 'Meeting not found' };
+    
+    const baseNotes = (updates.notes || '').split('Agenda Topics:')[0].trim();
+    const agendaTopics = (updates.agendaTopics || '').trim();
+    const agendaBlock = agendaTopics ? ('Agenda Topics:\n' + agendaTopics) : '';
+    const finalNotes = baseNotes && agendaBlock ? (baseNotes + '\n\n' + agendaBlock) : (baseNotes || agendaBlock);
+    
+    const notesCell = sheet.getRange(targetRow, CONFIG.MEETING_COLUMNS.NOTES + 1);
+    notesCell.setValue(finalNotes);
+    
+    const linkCell = sheet.getRange(targetRow, CONFIG.MEETING_COLUMNS.DELIVERABLE_LINK + 1);
+    if (updates.deliverableLink && String(updates.deliverableLink).trim()) {
+      linkCell.setFormula('=HYPERLINK(\"' + updates.deliverableLink + '\", \"Agenda\")');
+    } else {
+      linkCell.setValue('');
+    }
+    
+    return { success: true };
+  } catch (error) {
+    Logger.log('Error updating meeting: ' + error);
     return { success: false, error: error.toString() };
   }
 }
