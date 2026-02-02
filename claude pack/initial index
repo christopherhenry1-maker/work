@@ -1022,6 +1022,104 @@
             }
         }
     
+        /* PDF Export Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .modal.hidden {
+            display: none;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 1rem;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--color-slate-200);
+        }
+        
+        .modal-title {
+            font-size: 1.125rem;
+            font-weight: 700;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--color-slate-500);
+        }
+        
+        .close-btn:hover {
+            color: var(--color-slate-900);
+        }
+        
+        .modal-body {
+            padding: 1.5rem;
+        }
+        
+        .modal-footer {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: flex-end;
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--color-slate-200);
+        }
+        
+        .btn-primary {
+            background-color: var(--color-red-600);
+            color: white;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--color-red-700);
+        }
+        
+        .btn-secondary {
+            background-color: var(--color-slate-100);
+            color: var(--color-slate-700);
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--color-slate-300);
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .btn-secondary:hover {
+            background-color: var(--color-slate-200);
+        }
+    
         /* View Toggle Buttons */
         .view-toggle-btns {
             display: flex;
@@ -1927,6 +2025,45 @@
         </main>
     </div>
 
+    <!-- PDF Export Modal -->
+    <div id="pdfExportModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Export Weekly Schedule</h3>
+                <button class="close-btn" onclick="closePDFExportModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Week Title</label>
+                    <input type="text" id="pdfWeekTitle" value="The Current Week: A Funnel from Data to Decision" style="width: 100%; padding: 0.5rem; border: 1px solid var(--color-slate-300); border-radius: 0.375rem; font-size: 0.875rem;">
+                </div>
+                
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="checkbox" id="pdfPrepMeetings" checked>
+                        <span style="font-size: 0.875rem;">Include prep meeting indicators</span>
+                    </label>
+                </div>
+                
+                <div>
+                    <label style="display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 0.75rem;">Select Meetings</label>
+                    <div id="pdfMeetingsList" style="max-height: 300px; overflow-y: auto; border: 1px solid var(--color-slate-200); border-radius: 0.375rem; padding: 0.75rem;">
+                        <div class="loading-spinner" style="text-align: center;">Loading meetings...</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="display: flex; gap: 0.75rem; justify-content: flex-end; padding: 1rem 1.5rem; border-top: 1px solid var(--color-slate-200);">
+                <button class="btn-secondary" onclick="closePDFExportModal()">Cancel</button>
+                <button class="btn-primary" onclick="generatePDFExport()">
+                    <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 1rem; height: 1rem; margin-right: 0.5rem;">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                    </svg>
+                    Export PDF
+                </button>
+            </div>
+        </div>
+    </div>
+
 <script>
 // ============================================================================
 // GLOBAL STATE
@@ -2362,7 +2499,7 @@ function renderSchedule() {
                     </svg>
                     Executive Schedule - 2 Week View
                 </h2>
-                <button class="icon-btn" title="Download Schedule">
+                <button class="icon-btn" onclick="openPDFExportModal()" title="Export to PDF">
                     <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                     </svg>
@@ -4077,6 +4214,116 @@ function submitNewItem(event) {
             alert('Error adding item: ' + error);
         })
         .addNewItem(itemData);
+}
+
+// ============================================================================
+// PDF EXPORT FUNCTIONALITY
+// ============================================================================
+
+function openPDFExportModal() {
+    const modal = document.getElementById('pdfExportModal');
+    modal.classList.remove('hidden');
+    
+    // Populate meetings list
+    const meetingsList = document.getElementById('pdfMeetingsList');
+    
+    if (!dashboardData.meetings || dashboardData.meetings.length === 0) {
+        meetingsList.innerHTML = '<p style="color: var(--color-slate-500); text-align: center; padding: 1rem;">No meetings available</p>';
+        return;
+    }
+    
+    // Detect conflicts
+    const meetingsByDate = {};
+    dashboardData.meetings.forEach(m => {
+        if (!meetingsByDate[m.date]) {
+            meetingsByDate[m.date] = [];
+        }
+        meetingsByDate[m.date].push(m);
+    });
+    
+    // Mark conflicts
+    for (const date in meetingsByDate) {
+        const timeSlots = {};
+        meetingsByDate[date].forEach(m => {
+            const timeKey = m.time || '00:00';
+            if (!timeSlots[timeKey]) {
+                timeSlots[timeKey] = [];
+            }
+            timeSlots[timeKey].push(m);
+        });
+        
+        for (const timeKey in timeSlots) {
+            if (timeSlots[timeKey].length > 1) {
+                timeSlots[timeKey].forEach(m => {
+                    m.hasConflict = true;
+                });
+            }
+        }
+    }
+    
+    // Render meetings list
+    meetingsList.innerHTML = dashboardData.meetings.map(m => `
+        <label style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; border-bottom: 1px solid var(--color-slate-100); cursor: pointer;">
+            <input type="checkbox" class="pdf-meeting-checkbox" value="${m.id}" checked>
+            <div style="flex: 1;">
+                <div style="font-weight: 600; font-size: 0.875rem;">
+                    ${escapeHtml(m.title)}
+                    ${m.hasConflict ? '<span style="color: var(--color-red-600); margin-left: 0.5rem;">⚠ CONFLICT</span>' : ''}
+                </div>
+                <div style="font-size: 0.75rem; color: var(--color-slate-500);">
+                    ${m.dateFormatted || ''} at ${m.time || 'TBD'}
+                    ${m.prepRequired ? ' • 📋 Prep Required' : ''}
+                </div>
+            </div>
+        </label>
+    `).join('');
+}
+
+function closePDFExportModal() {
+    const modal = document.getElementById('pdfExportModal');
+    modal.classList.add('hidden');
+}
+
+function generatePDFExport() {
+    const title = document.getElementById('pdfWeekTitle').value || 'Weekly Schedule';
+    const includePrepMeetings = document.getElementById('pdfPrepMeetings').checked;
+    const selectedMeetings = Array.from(document.querySelectorAll('.pdf-meeting-checkbox:checked')).map(cb => cb.value);
+    
+    if (selectedMeetings.length === 0) {
+        alert('Please select at least one meeting to export');
+        return;
+    }
+    
+    // Show loading state
+    const exportBtn = event.target;
+    const originalText = exportBtn.innerHTML;
+    exportBtn.disabled = true;
+    exportBtn.innerHTML = '<svg class="icon" style="width: 1rem; height: 1rem; animation: spin 1s linear infinite;"></svg> Generating...';
+    
+    // Call backend to generate PDF
+    google.script.run
+        .withSuccessHandler((result) => {
+            exportBtn.disabled = false;
+            exportBtn.innerHTML = originalText;
+            
+            if (result.success) {
+                // Open the PDF in a new tab
+                window.open(result.downloadUrl, '_blank');
+                closePDFExportModal();
+            } else {
+                alert('Error generating PDF: ' + (result.error || 'Unknown error'));
+            }
+        })
+        .withFailureHandler((error) => {
+            exportBtn.disabled = false;
+            exportBtn.innerHTML = originalText;
+            alert('Error: ' + error);
+        })
+        .generateWeeklySchedulePDF({
+            weekTitle: title,
+            includePrepMeetings: includePrepMeetings,
+            selectedMeetingIds: selectedMeetings
+        });
 }
 
 
