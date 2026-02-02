@@ -2268,14 +2268,6 @@ function onDataLoaded(data) {
     }
     
     try {
-        console.log('Rendering document repository...');
-        renderDocumentRepository();
-        console.log('✅ Document repository rendered');
-    } catch (e) {
-        console.error('❌ Error rendering document repository:', e);
-    }
-    
-    try {
         console.log('Rendering recurring meetings dropdown...');
         renderRecurringMeetingsDropdown();
         console.log('✅ Recurring meetings dropdown rendered');
