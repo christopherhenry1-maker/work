@@ -1974,10 +1974,9 @@ function generateWeeklySchedulePDF(options) {
     generatedPara.setForegroundColor('#555555');
     
     // Red divider
-    const divider = body.appendParagraph('');
-    divider.setBorderBottom(true);
-    divider.setBorderColor('#cc0000');
-    divider.setSpacingAfter(10);
+    const divider = body.appendHorizontalRule();
+    divider.setColor('#cc0000');
+    body.appendParagraph('').setSpacingAfter(6);
 
     // Executive summary box
     const summaryTable = body.appendTable([['', '']]);

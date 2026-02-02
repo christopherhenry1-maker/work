@@ -868,6 +868,19 @@
             gap: 0.25rem;
         }
 
+        .agenda-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.1rem 0.35rem;
+            border-radius: 999px;
+            font-size: 0.6rem;
+            font-weight: 700;
+            color: var(--color-blue-600);
+            background: var(--color-blue-100);
+            border: 1px solid rgba(37, 99, 235, 0.2);
+        }
+
         /* Utilities */
         .icon {
             width: 1rem;
@@ -2569,6 +2582,7 @@
             </div>
             <div class="modal-footer" style="display: flex; gap: 0.75rem; justify-content: flex-end; padding: 1rem 1.5rem; border-top: 1px solid var(--color-slate-200);">
                 <button class="btn-secondary" onclick="closePDFExportModal()">Cancel</button>
+                <button class="btn-secondary" onclick="previewPDFExport(this)">Preview</button>
                 <button class="btn-primary" onclick="generatePDFExport(this)">
                     <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 1rem; height: 1rem; margin-right: 0.5rem;">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
@@ -3108,7 +3122,25 @@ function renderSchedule() {
         secondWeekDates.push(d.toISOString().split('T')[0]);
     }
     
-    const html = `
+        const agendaMeetings = (dashboardData.meetings || []).filter(m => m.deliverableLink);
+        const agendaSection = agendaMeetings.length > 0 ? `
+            <div style="margin-top: 1rem; border-top: 1px solid var(--color-slate-200); padding-top: 1rem;">
+                <div style="font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-slate-600); margin-bottom: 0.5rem;">
+                    Meeting Agendas
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+                    ${agendaMeetings.map(m => `
+                        <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem;">
+                            <span style="font-weight: 700; color: var(--color-slate-700); white-space: nowrap;">${m.dateFormatted || m.date}</span>
+                            <span style="color: var(--color-slate-400);">•</span>
+                            <span style="flex: 1;">${escapeHtml(m.title)}</span>
+                            <a href="${m.deliverableLink}" target="_blank" class="action-link" style="font-size: 0.75rem;">Agenda</a>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        ` : '';
+        const html = `
         <div class="card">
             <div class="card-header">
                 <h2 class="card-title">
@@ -3122,6 +3154,7 @@ function renderSchedule() {
                 ${renderScheduleGrid(firstWeekDates, meetingsByDate, 'Week 1', true)}
                 ${secondWeekDates.length > 0 ? renderScheduleGrid(secondWeekDates, meetingsByDate, 'Week 2', false) : ''}
             </div>
+            ${agendaSection}
         </div>
     `;
     
@@ -3175,6 +3208,7 @@ function renderScheduleGrid(dates, meetingsByDate, weekLabel, showExport) {
                                             <div style="font-weight: 700; font-size: 0.7rem; color: var(--color-slate-900); white-space: nowrap;">${formatTimeStandard(m.time)}</div>
                                             <div style="font-size: 0.7rem; color: var(--color-slate-600); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;">${escapeHtml(m.title)}</div>
                                             ${renderHotTopicIcon(m)}
+                                            ${renderAgendaBadge(m)}
                                             ${m.prepRequired ? `
                                                 <svg class="icon-xs" style="color: var(--color-blue-600); width: 10px; height: 10px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -3263,6 +3297,11 @@ function renderHotTopicIcon(meeting) {
     const cls = level === 'urgent' ? 'hot-topic-urgent' : (level === 'must-attend' ? 'hot-topic-attend' : 'hot-topic-default');
     const icon = level === 'urgent' ? '❗' : (level === 'must-attend' ? '⭐' : '🔥');
     return `<span class="hot-topic-icon ${cls}" title="${label}" aria-label="${label}">${icon}</span>`;
+}
+
+function renderAgendaBadge(meeting) {
+    if (!meeting || !meeting.deliverableLink) return '';
+    return `<span class="agenda-badge" title="Agenda attached" aria-label="Agenda attached">📝</span>`;
 }
 
 function getMeetingColorClass(meeting) {
@@ -4029,9 +4068,11 @@ function renderRecurringMeetingsDropdown() {
         const key = (meeting.name || '').toLowerCase().trim();
         const nextDate = nextDateByName[key];
         const dateLabel = nextDate
-            ? ` — ${nextDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+            ? `${nextDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
             : '';
-        html += `<option value="${escapeHtml(meeting.id)}">${escapeHtml(meeting.name)}${dateLabel}</option>`;
+        const display = dateLabel ? `${dateLabel} | ${meeting.name}` : meeting.name;
+        const style = dateLabel ? 'style="font-weight:700;"' : '';
+        html += `<option value="${escapeHtml(meeting.id)}" ${style}>${escapeHtml(display)}</option>`;
     });
     
     select.innerHTML = html;
@@ -5262,7 +5303,7 @@ function closePDFExportModal() {
     modal.classList.add('hidden');
 }
 
-function generatePDFExport(btn) {
+function generatePDFExport(btn, previewMode = false) {
     const title = document.getElementById('pdfWeekTitle').value || 'Two-Week Executive Schedule';
     const includePrepMeetings = document.getElementById('pdfPrepMeetings').checked;
     const notes = document.getElementById('pdfNotes').value.trim();
@@ -5276,7 +5317,7 @@ function generatePDFExport(btn) {
     const exportBtn = btn || document.querySelector('#pdfExportModal .btn-primary');
     const originalText = exportBtn.innerHTML;
     exportBtn.disabled = true;
-    exportBtn.innerHTML = 'Generating...';
+    exportBtn.innerHTML = previewMode ? 'Preparing Preview...' : 'Generating...';
     
     const canUseBackend = typeof google !== 'undefined' &&
         google.script &&
@@ -5389,7 +5430,12 @@ function generatePDFExport(btn) {
                 pdf.text(lines, 20, yPos);
             }
             
-            pdf.save(`${title.replace(/[^a-z0-9]/gi, '_')}.pdf`);
+            if (previewMode) {
+                const blobUrl = pdf.output('bloburl');
+                window.open(blobUrl, '_blank');
+            } else {
+                pdf.save(`${title.replace(/[^a-z0-9]/gi, '_')}.pdf`);
+            }
             exportBtn.disabled = false;
             exportBtn.innerHTML = originalText;
             closePDFExportModal();
@@ -5400,6 +5446,10 @@ function generatePDFExport(btn) {
             exportBtn.innerHTML = originalText;
         }
     }, 100);
+}
+
+function previewPDFExport(btn) {
+    generatePDFExport(btn, true);
 }
 
 
