@@ -1469,17 +1469,80 @@ function completeItem(itemId, destination) {
   try {
     Logger.log('Completing item: ' + itemId + ' to ' + destination);
     
-    // This is a placeholder - implement based on your sheet structure
-    // You'll need to:
-    // 1. Find the item by ID in the appropriate sheet section
-    // 2. Copy it to the destination section
-    // 3. Delete or mark it as complete in the source
+    const ss = SpreadsheetApp.openById(CONFIG.DELIVERABLES_SHEET_ID);
+    const sheet = ss.getSheetByName(CONFIG.DELIVERABLES_TAB_NAME);
     
-    return { success: true, message: 'Item completed and moved to ' + destination };
+    if (!sheet) {
+      return { success: false, error: 'Sheet not found: ' + CONFIG.DELIVERABLES_TAB_NAME };
+    }
+    
+    // Parse item ID to extract section and index (e.g., "exec1-5" or "document-3")
+    const idParts = itemId.split('-');
+    const itemType = idParts[0];
+    const itemIndex = parseInt(idParts[1]);
+    
+    // Determine source section based on item type
+    let startRow, endRow;
+    if (itemType === 'exec1') {
+      startRow = CONFIG.EXEC1_START_ROW;
+      endRow = CONFIG.EXEC1_END_ROW;
+    } else if (itemType === 'exec2') {
+      startRow = CONFIG.EXEC2_START_ROW;
+      endRow = CONFIG.EXEC2_END_ROW;
+    } else if (itemType === 'document') {
+      startRow = CONFIG.DOCUMENTS_START_ROW;
+      endRow = CONFIG.DOCUMENTS_END_ROW;
+    } else {
+      return { success: false, error: 'Unknown item type: ' + itemType };
+    }
+    
+    // Calculate actual row number
+    const sourceRow = startRow + itemIndex;
+    
+    if (sourceRow > endRow) {
+      return { success: false, error: 'Item index out of range' };
+    }
+    
+    // Get the item data (7 columns standard)
+    const sourceRange = sheet.getRange(sourceRow, 1, 1, 7);
+    const itemData = sourceRange.getValues()[0];
+    
+    // Determine destination section (typically "completed" section)
+    let destinationStartRow;
+    if (destination === 'completed') {
+      destinationStartRow = CONFIG.COMPLETED_START_ROW;
+    } else {
+      return { success: false, error: 'Unknown destination: ' + destination };
+    }
+    
+    // Find first empty row in destination
+    let destinationRow = destinationStartRow;
+    const range = sheet.getRange(destinationStartRow, 1, CONFIG.COMPLETED_END_ROW - destinationStartRow + 1, 1);
+    const values = range.getValues();
+    
+    for (let i = 0; i < values.length; i++) {
+      if (!values[i][0] || values[i][0].toString().trim() === '') {
+        destinationRow = destinationStartRow + i;
+        break;
+      }
+    }
+    
+    // Move item to destination
+    sheet.getRange(destinationRow, 1, 1, 7).setValues([itemData]);
+    
+    // Clear source row
+    sourceRange.clearContent();
+    
+    Logger.log('✅ Item ' + itemId + ' moved to ' + destination + ' at row ' + destinationRow);
+    return { 
+      success: true, 
+      message: 'Item completed and moved to ' + destination,
+      destinationRow: destinationRow
+    };
     
   } catch (error) {
     Logger.log('Error completing item: ' + error);
-    throw error;
+    return { success: false, error: error.toString() };
   }
 }
 
@@ -1713,5 +1776,291 @@ function addDeliverable(data) {
   } catch (error) {
     Logger.log('❌ Error adding deliverable: ' + error.message);
     return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Generate PDF of weekly schedule
+ * @param {Object} options - Export options including selected meetings, week title, etc.
+ * @return {Object} - Contains success status and download URL or error
+ */
+function generateWeeklySchedulePDF(options) {
+  try {
+    const { selectedMeetingIds, weekTitle, includePrepMeetings, agendaItems } = options;
+    
+    // Get all meetings
+    const allMeetings = getMeetings();
+    
+    // Filter to selected meetings only
+    let meetings = allMeetings;
+    if (selectedMeetingIds && selectedMeetingIds.length > 0) {
+      meetings = allMeetings.filter(m => selectedMeetingIds.includes(m.id));
+    }
+    
+    // Create a new Google Doc for the PDF
+    const doc = DocumentApp.create('Weekly Schedule - ' + (weekTitle || new Date().toLocaleDateString()));
+    const body = doc.getBody();
+    
+    // Set page to landscape
+    body.setPageWidth(792).setPageHeight(612); // Letter landscape
+    body.setMarginTop(36);
+    body.setMarginBottom(36);
+    body.setMarginLeft(36);
+    body.setMarginRight(36);
+    
+    // Title
+    const title = body.appendParagraph(weekTitle || 'The Current Week: A Funnel from Data to Decision');
+    title.setHeading(DocumentApp.ParagraphHeading.HEADING1);
+    title.setForegroundColor('#ffffff');
+    title.setBackgroundColor('#000000');
+    title.setAlignment(DocumentApp.HorizontalAlignment.LEFT);
+    title.setSpacingAfter(12);
+    
+    // Group meetings by date
+    const meetingsByDate = {};
+    meetings.forEach(m => {
+      if (!meetingsByDate[m.date]) {
+        meetingsByDate[m.date] = [];
+      }
+      meetingsByDate[m.date].push(m);
+    });
+    
+    // Get unique dates and sort
+    const dates = Object.keys(meetingsByDate).sort();
+    
+    // Create table for schedule
+    const table = body.appendTable();
+    
+    // Header row with day names and dates
+    const headerRow = table.appendTableRow();
+    const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+    
+    // Calculate the Monday of the first week
+    let firstDate = new Date(dates[0] + 'T00:00:00');
+    const firstDayOfWeek = firstDate.getDay();
+    const mondayOffset = firstDayOfWeek === 0 ? -6 : 1 - firstDayOfWeek;
+    const monday = new Date(firstDate);
+    monday.setDate(firstDate.getDate() + mondayOffset);
+    
+    // Build header row for each weekday
+    for (let i = 0; i < 5; i++) {
+      const dayDate = new Date(monday);
+      dayDate.setDate(monday.getDate() + i);
+      const dateStr = Utilities.formatDate(dayDate, Session.getScriptTimeZone(), 'MM/dd');
+      const dayName = dayNames[i];
+      
+      const cell = headerRow.appendTableCell(dayName + ' (' + dateStr + ')');
+      cell.setBackgroundColor('#cc0000');
+      cell.getChild(0).asParagraph().setForegroundColor('#ffffff');
+      cell.getChild(0).asParagraph().setAlignment(DocumentApp.HorizontalAlignment.CENTER);
+      cell.setWidth(144); // 720/5 = 144 points per column
+    }
+    
+    // Content row
+    const contentRow = table.appendTableRow();
+    
+    // Detect conflicts (meetings at same time on same day)
+    for (const date of Object.keys(meetingsByDate)) {
+      const dayMeetings = meetingsByDate[date];
+      const timeSlots = {};
+      
+      dayMeetings.forEach(m => {
+        const timeKey = m.time24;
+        if (!timeSlots[timeKey]) {
+          timeSlots[timeKey] = [];
+        }
+        timeSlots[timeKey].push(m);
+      });
+      
+      // Mark conflicts
+      for (const timeKey of Object.keys(timeSlots)) {
+        if (timeSlots[timeKey].length > 1) {
+          timeSlots[timeKey].forEach(m => {
+            m.hasConflict = true;
+          });
+        }
+      }
+    }
+    
+    // Fill in content for each day
+    for (let i = 0; i < 5; i++) {
+      const dayDate = new Date(monday);
+      dayDate.setDate(monday.getDate() + i);
+      const dateStr = Utilities.formatDate(dayDate, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+      
+      const cell = contentRow.appendTableCell();
+      cell.setVerticalAlignment(DocumentApp.VerticalAlignment.TOP);
+      
+      const dayMeetings = meetingsByDate[dateStr] || [];
+      dayMeetings.sort((a, b) => (a.time24 || '').localeCompare(b.time24 || ''));
+      
+      if (dayMeetings.length === 0) {
+        cell.setText('No meetings');
+        cell.getChild(0).asParagraph().setForegroundColor('#999999');
+      } else {
+        // Clear default text
+        cell.clear();
+        
+        dayMeetings.forEach((m, idx) => {
+          // Time
+          const timePara = cell.appendParagraph(m.time || 'TBD');
+          timePara.setBold(true);
+          timePara.setFontSize(9);
+          
+          // Meeting name
+          const namePara = cell.appendParagraph(m.title);
+          namePara.setFontSize(8);
+          
+          // Highlight important meetings in red
+          if (m.isHotTopic || m.prepRequired) {
+            namePara.setForegroundColor('#cc0000');
+          }
+          
+          // Mark conflicts
+          if (m.hasConflict) {
+            const conflictPara = cell.appendParagraph('⚠️ CONFLICT');
+            conflictPara.setForegroundColor('#ff6600');
+            conflictPara.setFontSize(7);
+            conflictPara.setBold(true);
+            
+            // Also highlight the meeting name
+            namePara.setBackgroundColor('#fff3cd');
+          }
+          
+          // Add prep meeting indicator if needed
+          if (includePrepMeetings && m.prepRequired) {
+            const prepPara = cell.appendParagraph('📋 Prep Required');
+            prepPara.setFontSize(7);
+            prepPara.setForegroundColor('#0066cc');
+          }
+          
+          // Add spacing between meetings
+          if (idx < dayMeetings.length - 1) {
+            cell.appendParagraph('');
+          }
+        });
+      }
+    }
+    
+    // Add agenda items section if provided
+    if (agendaItems && Object.keys(agendaItems).length > 0) {
+      body.appendParagraph('');
+      
+      // Add bottom section table
+      const bottomTable = body.appendTable();
+      const bottomRow = bottomTable.appendTableRow();
+      
+      // Add cells for each agenda section
+      for (const [sectionName, items] of Object.entries(agendaItems)) {
+        const cell = bottomRow.appendTableCell();
+        cell.setBackgroundColor('#000000');
+        
+        // Section header
+        const headerPara = cell.appendParagraph(sectionName);
+        headerPara.setForegroundColor('#ffffff');
+        headerPara.setBold(true);
+        headerPara.setFontSize(10);
+        
+        // Items
+        if (items && items.length > 0) {
+          items.forEach(item => {
+            const itemPara = cell.appendParagraph('• ' + item);
+            itemPara.setForegroundColor('#ffffff');
+            itemPara.setFontSize(8);
+          });
+        }
+      }
+    }
+    
+    // Add Verizon footer
+    body.appendParagraph('');
+    const footer = body.appendParagraph('verizon');
+    footer.setFontFamily('Arial');
+    footer.setBold(true);
+    footer.setFontSize(14);
+    footer.setForegroundColor('#cc0000');
+    
+    // Save and get PDF
+    doc.saveAndClose();
+    
+    // Convert to PDF
+    const docFile = DriveApp.getFileById(doc.getId());
+    const pdfBlob = docFile.getAs('application/pdf');
+    pdfBlob.setName('Weekly_Schedule_' + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd') + '.pdf');
+    
+    // Save PDF to Drive
+    const pdfFile = DriveApp.createFile(pdfBlob);
+    
+    // Delete the temporary Doc
+    docFile.setTrashed(true);
+    
+    return {
+      success: true,
+      pdfUrl: pdfFile.getUrl(),
+      pdfId: pdfFile.getId(),
+      downloadUrl: 'https://drive.google.com/uc?export=download&id=' + pdfFile.getId()
+    };
+    
+  } catch (error) {
+    Logger.log('Error generating PDF: ' + error);
+    return {
+      success: false,
+      error: error.toString()
+    };
+  }
+}
+
+/**
+ * Get meetings data formatted for PDF export selection
+ */
+function getMeetingsForPDFExport() {
+  try {
+    const meetings = getMeetings();
+    
+    // Group by date and detect conflicts
+    const meetingsByDate = {};
+    meetings.forEach(m => {
+      if (!meetingsByDate[m.date]) {
+        meetingsByDate[m.date] = [];
+      }
+      meetingsByDate[m.date].push(m);
+    });
+    
+    // Detect conflicts
+    for (const date of Object.keys(meetingsByDate)) {
+      const dayMeetings = meetingsByDate[date];
+      const timeSlots = {};
+      
+      dayMeetings.forEach(m => {
+        const timeKey = m.time24;
+        if (!timeSlots[timeKey]) {
+          timeSlots[timeKey] = [];
+        }
+        timeSlots[timeKey].push(m);
+      });
+      
+      // Mark conflicts
+      for (const timeKey of Object.keys(timeSlots)) {
+        if (timeSlots[timeKey].length > 1) {
+          timeSlots[timeKey].forEach(m => {
+            m.hasConflict = true;
+            m.conflictCount = timeSlots[timeKey].length;
+          });
+        }
+      }
+    }
+    
+    return {
+      success: true,
+      meetings: meetings,
+      meetingsByDate: meetingsByDate
+    };
+    
+  } catch (error) {
+    Logger.log('Error getting meetings for PDF: ' + error);
+    return {
+      success: false,
+      error: error.toString()
+    };
   }
 }
