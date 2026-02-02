@@ -881,6 +881,50 @@
             border: 1px solid rgba(37, 99, 235, 0.2);
         }
 
+        .agenda-accordion-item {
+            border: 1px solid var(--color-slate-200);
+            border-radius: 0.5rem;
+            background: white;
+            margin-top: 0.5rem;
+            overflow: hidden;
+        }
+
+        .agenda-accordion-header {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.6rem 0.75rem;
+            border: none;
+            background: var(--color-slate-50);
+            cursor: pointer;
+            text-align: left;
+        }
+
+        .agenda-accordion-date {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--color-slate-700);
+            white-space: nowrap;
+        }
+
+        .agenda-accordion-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--color-slate-900);
+            flex: 1;
+        }
+
+        .agenda-accordion-body {
+            display: none;
+            padding: 0.6rem 0.75rem 0.75rem;
+            background: white;
+        }
+
+        .agenda-accordion-item.open .agenda-accordion-body {
+            display: block;
+        }
+
         /* Utilities */
         .icon {
             width: 1rem;
@@ -2360,6 +2404,7 @@
                             </button>
                         </div>
                     </div>
+                    <div id="upcomingAgendasList" class="mt-3"></div>
                 </div>
             </div>
 
@@ -3496,6 +3541,8 @@ function renderSidebarLinks() {
     } else {
         completedContainer.innerHTML = '<p style="font-size: 0.75rem; color: var(--color-slate-400); padding: 0.5rem;">No completed items yet</p>';
     }
+
+    renderUpcomingAgendasList();
     
     // Document Repository Links (limit to first 10)
     const docRepoContainer = document.getElementById('documentRepoLinks');
@@ -3514,6 +3561,45 @@ function renderSidebarLinks() {
     } else {
         docRepoContainer.innerHTML = '<p style="font-size: 0.75rem; color: var(--color-slate-400); padding: 0.5rem;">No documents available</p>';
     }
+}
+
+function renderUpcomingAgendasList() {
+    const container = document.getElementById('upcomingAgendasList');
+    if (!container) return;
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const agendaMeetings = (dashboardData.meetings || [])
+        .filter(m => m.deliverableLink && m.date)
+        .filter(m => new Date(m.date + 'T00:00:00') >= today)
+        .sort((a, b) => {
+            const dateCompare = new Date(a.date) - new Date(b.date);
+            if (dateCompare !== 0) return dateCompare;
+            return timeToMinutes(a.time24 || a.time) - timeToMinutes(b.time24 || b.time);
+        });
+    
+    if (agendaMeetings.length === 0) {
+        container.innerHTML = '<p style="font-size: 0.75rem; color: var(--color-slate-400); padding: 0.5rem;">No upcoming agendas</p>';
+        return;
+    }
+    
+    container.innerHTML = agendaMeetings.map(m => {
+        const dateLabel = m.dateFormatted || m.date;
+        const timeLabel = formatTimeStandard(m.time) || '';
+        return `
+            <div class="agenda-accordion-item">
+                <button class="agenda-accordion-header" onclick="this.parentElement.classList.toggle('open')">
+                    <span class="agenda-accordion-date">${dateLabel}</span>
+                    <span class="agenda-accordion-title">${escapeHtml(m.title)}</span>
+                </button>
+                <div class="agenda-accordion-body">
+                    <div style="font-size: 0.75rem; color: var(--color-slate-500); margin-bottom: 0.35rem;">${timeLabel}</div>
+                    <a href="${m.deliverableLink}" target="_blank" class="action-link" style="font-size: 0.8rem;">Open Agenda</a>
+                </div>
+            </div>
+        `;
+    }).join('');
 }
 
 // ============================================================================
