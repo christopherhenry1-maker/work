@@ -792,8 +792,8 @@
         }
 
         .schedule-item {
-            background-color: var(--color-slate-700);
-            border-left: 0;
+            background-color: var(--color-blue-100);
+            border: 1px solid var(--color-blue-200);
             padding: 0.3rem 0.5rem;
             border-radius: 0.375rem;
             font-size: 0.7rem;
@@ -810,12 +810,13 @@
         }
 
         .schedule-item.deep-work {
-            background-color: var(--color-blue-600);
+            background-color: var(--color-blue-100);
+            border-color: var(--color-blue-200);
         }
 
         .schedule-item-title {
             font-weight: 600;
-            color: white;
+            color: var(--color-slate-900);
             margin-bottom: 0;
             white-space: nowrap;
             overflow: hidden;
@@ -824,7 +825,7 @@
 
         .schedule-item-time {
             font-size: 0.625rem;
-            color: rgba(255, 255, 255, 0.8);
+            color: var(--color-slate-600);
         }
 
         .hot-topic-badge {
@@ -1457,10 +1458,9 @@
         .calendar-month-day {
             background-color: white;
             min-height: 120px;
-            max-height: 150px;
             padding: 0.5rem;
             vertical-align: top;
-            overflow: hidden;
+            overflow: visible;
         }
 
         .calendar-month-day.other-month {
@@ -1490,8 +1490,8 @@
         }
 
         .calendar-meeting-item {
-            background-color: var(--color-slate-700);
-            border-left: 0;
+            background-color: var(--color-blue-100);
+            border: 1px solid var(--color-blue-200);
             padding: 0.3rem 0.5rem;
             margin-bottom: 0.25rem;
             border-radius: 0.375rem;
@@ -1505,7 +1505,7 @@
         }
 
         .calendar-meeting-item:hover {
-            filter: brightness(0.95);
+            background-color: var(--color-slate-200);
         }
 
         .calendar-meeting-time {
@@ -1517,7 +1517,7 @@
         .calendar-meeting-title {
             font-weight: 600;
             font-size: 0.75rem;
-            color: white;
+            color: var(--color-slate-900);
             line-height: 1.15;
             display: block;
             overflow: hidden;
@@ -1560,46 +1560,35 @@
             border-left: 3px solid var(--color-slate-400);
         }
 
-        .calendar-meeting-item.meeting-color-11,
-        .schedule-item.meeting-color-11 {
-            background-color: var(--color-red-600);
-            border-left: 0;
+        .calendar-meeting-title-row,
+        .schedule-item-title-row {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            min-width: 0;
         }
 
-        .calendar-meeting-item.meeting-color-6,
-        .schedule-item.meeting-color-6 {
-            background-color: var(--color-orange-600);
-            border-left: 0;
+        .calendar-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+            padding: 0 0 0.5rem 0;
         }
 
-        .calendar-meeting-item.meeting-color-7,
-        .schedule-item.meeting-color-7 {
-            background-color: var(--color-purple-600);
-            border-left: 0;
+        .calendar-legend-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-size: 0.7rem;
+            color: var(--color-slate-700);
         }
 
-        .calendar-meeting-item.meeting-color-5,
-        .schedule-item.meeting-color-5 {
-            background-color: var(--color-yellow-700);
-            border-left: 0;
-        }
-
-        .calendar-meeting-item.meeting-color-10,
-        .schedule-item.meeting-color-10 {
-            background-color: var(--color-green-600);
-            border-left: 0;
-        }
-
-        .calendar-meeting-item.meeting-color-9,
-        .schedule-item.meeting-color-9 {
-            background-color: var(--color-blue-600);
-            border-left: 0;
-        }
-
-        .calendar-meeting-item.meeting-color-8,
-        .schedule-item.meeting-color-8 {
-            background-color: var(--color-slate-600);
-            border-left: 0;
+        .calendar-legend-swatch {
+            width: 14px;
+            height: 14px;
+            border-radius: 0.25rem;
+            border: 1px solid var(--color-slate-200);
         }
 
         .meeting-title-card {
@@ -3024,7 +3013,7 @@ function renderDeliverables() {
     container.innerHTML = html;
 }
 
-function renderDeliverablesTable(deliverables) {
+function renderDeliverablesTable(deliverables, section) {
     if (!deliverables || deliverables.length === 0) {
         return '<p style="color: var(--color-slate-500); padding: 2rem; text-align: center;">No deliverables found.</p>';
     }
@@ -3052,6 +3041,11 @@ function renderDeliverablesTable(deliverables) {
                         style="cursor: pointer;">
                         <td>
                             <span class="item-description" style="display: inline;">${escapeHtml(item.description)}</span>
+                            ${section === 'exec1' && item.linkedMaterials ? `
+                                <span style="display: inline-flex; align-items: center; gap: 0.25rem; margin-left: 0.5rem; padding: 0.1rem 0.4rem; font-size: 0.65rem; font-weight: 700; border-radius: 999px; background: var(--color-blue-100); color: var(--color-blue-700);">
+                                    📝 Agenda Added
+                                </span>
+                            ` : ''}
                             ${item.comment ? `<div class="item-subtext" style="font-style: italic; color: var(--color-slate-500); margin-top: 0.25rem; font-size: 0.75rem;">${escapeHtml(item.comment)}</div>` : ''}
                         </td>
                         <td style="white-space: nowrap;">${item.eta && item.eta.trim() ? item.eta : '—'}</td>
@@ -3246,9 +3240,11 @@ function renderScheduleGrid(dates, meetingsByDate, weekLabel, showExport) {
                                          onclick="openMeetingDetails('${m.id}')" title="${escapeHtml(formatTimeStandard(m.time) || '')}">
                                         <div style="display: flex; align-items: center; gap: 0.5rem;">
                                             <div class="schedule-item-time">${formatTimeStandard(m.time)}</div>
-                                            <div style="font-size: 0.7rem; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;">${escapeHtml(cleanMeetingTitle(m.title))}</div>
-                                            ${renderHotTopicIcon(m)}
-                                            ${renderAgendaBadge(m)}
+                                            <div class="schedule-item-title-row" style="flex: 1;">
+                                                ${renderHotTopicIcon(m)}
+                                                ${renderAgendaBadge(m)}
+                                                <span class="schedule-item-title">${escapeHtml(cleanMeetingTitle(m.title))}</span>
+                                            </div>
                                             ${m.prepRequired ? `
                                                 <svg class="icon-xs" style="color: var(--color-blue-600); width: 10px; height: 10px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -4485,6 +4481,20 @@ function renderMeetingsCalendar() {
                         </svg>
                     </button>
                 </div>
+                <div class="calendar-legend">
+                    <span class="calendar-legend-item">
+                        <span class="calendar-legend-swatch" style="background-color: var(--color-blue-100); border-color: var(--color-blue-300);"></span>
+                        Standard
+                    </span>
+                    <span class="calendar-legend-item">
+                        <span class="calendar-legend-swatch" style="background-color: var(--color-orange-100); border-color: var(--color-orange-300);"></span>
+                        Must Attend
+                    </span>
+                    <span class="calendar-legend-item">
+                        <span class="calendar-legend-swatch" style="background-color: var(--color-red-100); border-color: var(--color-red-300);"></span>
+                        Urgent
+                    </span>
+                </div>
             </div>
             <div class="calendar-month-grid" style="grid-template-columns: repeat(5, 1fr);">
                 <div class="calendar-month-header">Mon</div>
@@ -4537,11 +4547,14 @@ function renderMeetingsCalendar() {
             <span class="calendar-day-number${isToday ? ' today' : ''}">${day}</span>`;
         
         dayMeetings.sort((a, b) => timeToMinutes(a.time24 || a.time) - timeToMinutes(b.time24 || b.time));
-        dayMeetings.slice(0, 3).forEach(m => {
+        dayMeetings.forEach(m => {
             const hotClass = getMeetingColorClass(m);
             html += `<div class="calendar-meeting-item agenda-hoverable ${hotClass}" onclick="openMeetingModal('${m.id}')" title="${escapeHtml(formatTimeStandard(m.time) || '')}">
-                <div class="calendar-meeting-title">${escapeHtml(cleanMeetingTitle(m.title))}</div>
-                ${renderAgendaBadge(m)}
+                <div class="calendar-meeting-title-row">
+                    ${renderHotTopicIcon(m)}
+                    ${renderAgendaBadge(m)}
+                    <span class="calendar-meeting-title">${escapeHtml(cleanMeetingTitle(m.title))}</span>
+                </div>
             </div>`;
         });
         
