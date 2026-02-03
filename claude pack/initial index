@@ -2938,7 +2938,7 @@ function renderDeliverables() {
                     <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 1.5rem; height: 1.5rem;">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
-                    Mike's/Sarcone's Upcoming Deliverables
+                    Sarcone's Upcoming Deliverables
                 </h2>
                 <button class="icon-btn" title="Add Deliverable" onclick="openAddItemModal('exec1')">
                     <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -4900,6 +4900,12 @@ function openDeliverableModal(id, description, eta, owner, link, comments) {
     document.getElementById('modalOwner').value = owner || '';
     document.getElementById('modalLink').value = link || '';
     document.getElementById('modalComments').value = comments || '';
+
+    const agendaContainer = document.getElementById('deliverableAgendaTopics');
+    if (agendaContainer) {
+        const agendaTopics = findAgendaTopicsForDeliverable(description || '');
+        agendaContainer.textContent = agendaTopics || 'No agenda topics linked.';
+    }
     
     // Store ID for saving
     modal.dataset.itemId = id;
@@ -4907,6 +4913,17 @@ function openDeliverableModal(id, description, eta, owner, link, comments) {
     
     // Show modal
     modal.style.display = 'flex';
+}
+
+function findAgendaTopicsForDeliverable(description) {
+    if (!description) return '';
+    const match = (dashboardData.meetings || []).find(m => {
+        return (m.title || '').toLowerCase().trim() === String(description).toLowerCase().trim();
+    });
+    if (!match || !match.notes) return '';
+    const parts = String(match.notes).split('Agenda Topics:');
+    if (parts.length < 2) return '';
+    return parts[1].trim();
 }
 
 function createDeliverableModal() {
@@ -4942,6 +4959,12 @@ function createDeliverableModal() {
                             <label style="display: block; font-weight: 600; color: var(--color-slate-700); margin-bottom: 0.5rem;">👤 Owner</label>
                             <input type="text" id="modalOwner" style="width: 100%; padding: 0.75rem; border: 1px solid var(--color-slate-300); border-radius: 0.5rem; font-size: 0.875rem;" placeholder="e.g., John Doe">
                         </div>
+                    </div>
+
+                    <!-- Agenda Topics -->
+                    <div style="margin-bottom: 1.5rem;">
+                        <label style="display: block; font-weight: 600; color: var(--color-slate-700); margin-bottom: 0.5rem;">🗂️ Agenda Topics</label>
+                        <div id="deliverableAgendaTopics" style="width: 100%; min-height: 80px; padding: 0.75rem; border: 1px solid var(--color-slate-300); border-radius: 0.5rem; font-size: 0.875rem; white-space: pre-line; background: var(--color-slate-50);"></div>
                     </div>
                     
                     <!-- Hyperlink -->
