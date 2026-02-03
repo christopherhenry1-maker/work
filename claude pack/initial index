@@ -2576,6 +2576,10 @@
                         <input type="checkbox" id="pdfSelectAll" checked>
                         <span>Select all</span>
                     </label>
+                    <div style="margin-bottom: 0.75rem;">
+                        <div style="font-size: 0.75rem; font-weight: 600; color: var(--color-slate-500); margin-bottom: 0.35rem; letter-spacing: 0.03em; text-transform: uppercase;">Select by day</div>
+                        <div id="pdfDayFilters" style="display: flex; flex-wrap: wrap; gap: 0.5rem;"></div>
+                    </div>
                     <div id="pdfMeetingsList" style="max-height: 300px; overflow-y: auto; border: 1px solid var(--color-slate-200); border-radius: 0.375rem; padding: 0.75rem;">
                         <div class="loading-spinner" style="text-align: center;">Loading meetings...</div>
                     </div>
@@ -3105,23 +3109,7 @@ function renderSchedule() {
         meetingsByDate[meeting.date].push(meeting);
     });
     
-    // Generate 2 weeks of workdays (Mon-Fri) starting from February 2, 2026 (hardcoded)
-    const startDate = new Date('2026-02-02T00:00:00'); // Hardcoded to February 2, 2026
-    const monday = new Date(startDate);
-    
-    const firstWeekDates = [];
-    const secondWeekDates = [];
-    
-    for (let i = 0; i < 5; i++) {
-        const d = new Date(monday);
-        d.setDate(monday.getDate() + i);
-        firstWeekDates.push(d.toISOString().split('T')[0]);
-    }
-    for (let i = 7; i < 12; i++) {
-        const d = new Date(monday);
-        d.setDate(monday.getDate() + i);
-        secondWeekDates.push(d.toISOString().split('T')[0]);
-    }
+    const { firstWeekDates, secondWeekDates } = getTwoWeekScheduleDates();
     
         const html = `
         <div class="card">
@@ -3141,6 +3129,32 @@ function renderSchedule() {
     `;
     
     container.innerHTML = html;
+}
+
+function getTwoWeekScheduleDates() {
+    // Generate 2 weeks of workdays (Mon-Fri) starting from February 2, 2026 (hardcoded)
+    const startDate = new Date('2026-02-02T00:00:00'); // Hardcoded to February 2, 2026
+    const monday = new Date(startDate);
+    
+    const firstWeekDates = [];
+    const secondWeekDates = [];
+    
+    for (let i = 0; i < 5; i++) {
+        const d = new Date(monday);
+        d.setDate(monday.getDate() + i);
+        firstWeekDates.push(d.toISOString().split('T')[0]);
+    }
+    for (let i = 7; i < 12; i++) {
+        const d = new Date(monday);
+        d.setDate(monday.getDate() + i);
+        secondWeekDates.push(d.toISOString().split('T')[0]);
+    }
+    
+    return {
+        firstWeekDates,
+        secondWeekDates,
+        allDates: [...firstWeekDates, ...secondWeekDates]
+    };
 }
 
 function renderScheduleGrid(dates, meetingsByDate, weekLabel, showExport) {
@@ -5235,9 +5249,16 @@ function openPDFExportModal() {
     // Populate meetings list
     const meetingsList = document.getElementById('pdfMeetingsList');
     const selectAllToggle = document.getElementById('pdfSelectAll');
+    const dayFilters = document.getElementById('pdfDayFilters');
+    const { allDates: twoWeekDates } = getTwoWeekScheduleDates();
+    const twoWeekDateSet = new Set(twoWeekDates);
+    const meetingsInView = (dashboardData.meetings || []).filter(m => m.date && twoWeekDateSet.has(m.date));
     
-    if (!dashboardData.meetings || dashboardData.meetings.length === 0) {
+    if (!meetingsInView || meetingsInView.length === 0) {
         meetingsList.innerHTML = '<p style="color: var(--color-slate-500); text-align: center; padding: 1rem;">No meetings available</p>';
+        if (dayFilters) {
+            dayFilters.innerHTML = '<span style="color: var(--color-slate-400); font-size: 0.75rem;">No days with meetings in the 2-week view.</span>';
+        }
         if (selectAllToggle) {
             selectAllToggle.checked = false;
             selectAllToggle.indeterminate = false;
@@ -5252,7 +5273,7 @@ function openPDFExportModal() {
     
     // Detect conflicts
     const meetingsByDate = {};
-    dashboardData.meetings.forEach(m => {
+    meetingsInView.forEach(m => {
         if (!meetingsByDate[m.date]) {
             meetingsByDate[m.date] = [];
         }
@@ -5280,14 +5301,14 @@ function openPDFExportModal() {
     }
     
     // Render meetings list
-    const sortedMeetings = [...dashboardData.meetings].sort((a, b) => {
+    const sortedMeetings = [...meetingsInView].sort((a, b) => {
         const dateCompare = new Date(a.date) - new Date(b.date);
         if (dateCompare !== 0) return dateCompare;
         return timeToMinutes(a.time24 || a.time) - timeToMinutes(b.time24 || b.time);
     });
     meetingsList.innerHTML = sortedMeetings.map(m => `
         <label style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; border-bottom: 1px solid var(--color-slate-100); cursor: pointer;">
-            <input type="checkbox" class="pdf-meeting-checkbox" value="${m.id}" checked>
+            <input type="checkbox" class="pdf-meeting-checkbox" value="${m.id}" data-date="${escapeHtml(m.date || '')}" checked>
             <div style="flex: 1;">
                 <div style="font-weight: 600; font-size: 0.875rem;">
                     ${escapeHtml(m.title)}
@@ -5302,11 +5323,44 @@ function openPDFExportModal() {
     `).join('');
 
     const meetingCheckboxes = Array.from(document.querySelectorAll('.pdf-meeting-checkbox'));
+    const dayCheckboxes = [];
+    if (dayFilters) {
+        dayFilters.innerHTML = twoWeekDates.map(dateStr => {
+            const count = (meetingsByDate[dateStr] || []).length;
+            const d = new Date(dateStr + 'T00:00:00');
+            const label = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+            const disabled = count === 0 ? 'disabled' : '';
+            return `
+                <label style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.25rem 0.5rem; border: 1px solid var(--color-slate-200); border-radius: 999px; font-size: 0.75rem; cursor: ${count === 0 ? 'not-allowed' : 'pointer'}; color: ${count === 0 ? 'var(--color-slate-400)' : 'var(--color-slate-700)'};">
+                    <input type="checkbox" class="pdf-day-checkbox" value="${escapeHtml(dateStr)}" ${disabled} style="margin: 0;">
+                    <span>${label} (${count})</span>
+                </label>
+            `;
+        }).join('');
+        dayCheckboxes.push(...Array.from(dayFilters.querySelectorAll('.pdf-day-checkbox')));
+    }
+
     const updateSelectAllState = () => {
         if (!selectAllToggle) return;
         const checkedCount = meetingCheckboxes.filter(cb => cb.checked).length;
         selectAllToggle.checked = checkedCount === meetingCheckboxes.length;
         selectAllToggle.indeterminate = checkedCount > 0 && checkedCount < meetingCheckboxes.length;
+    };
+
+    const updateDayFilterState = () => {
+        if (!dayCheckboxes.length) return;
+        dayCheckboxes.forEach(dayCb => {
+            const dateStr = dayCb.value;
+            const dayMeetings = meetingCheckboxes.filter(cb => cb.dataset.date === dateStr);
+            if (dayMeetings.length === 0) {
+                dayCb.checked = false;
+                dayCb.indeterminate = false;
+                return;
+            }
+            const checkedCount = dayMeetings.filter(cb => cb.checked).length;
+            dayCb.checked = checkedCount === dayMeetings.length;
+            dayCb.indeterminate = checkedCount > 0 && checkedCount < dayMeetings.length;
+        });
     };
     
     if (selectAllToggle) {
@@ -5315,14 +5369,32 @@ function openPDFExportModal() {
                 cb.checked = selectAllToggle.checked;
             });
             updateSelectAllState();
+            updateDayFilterState();
         };
     }
+
+    dayCheckboxes.forEach(dayCb => {
+        dayCb.onchange = () => {
+            const dateStr = dayCb.value;
+            meetingCheckboxes
+                .filter(cb => cb.dataset.date === dateStr)
+                .forEach(cb => {
+                    cb.checked = dayCb.checked;
+                });
+            updateSelectAllState();
+            updateDayFilterState();
+        };
+    });
     
     meetingCheckboxes.forEach(cb => {
-        cb.onchange = updateSelectAllState;
+        cb.onchange = () => {
+            updateSelectAllState();
+            updateDayFilterState();
+        };
     });
     
     updateSelectAllState();
+    updateDayFilterState();
 }
 
 function closePDFExportModal() {
