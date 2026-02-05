@@ -1,217 +1,360 @@
-import React from 'react';
-import { Users, Briefcase, MapPin, ArrowRightLeft, List, AlertTriangle, UserPlus, Building, BarChart3 } from 'lucide-react';
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>February 2026 Headcount Report</title>
+    
+    <!-- 1. Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 2. Load React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- 3. Load Babel for in-browser JSX compilation -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-const HeadcountDashboard = () => {
-  return (
-    <div className="min-h-screen bg-gray-100 p-4 font-sans text-gray-800 flex justify-center">
-      <div className="w-full max-w-6xl bg-white shadow-2xl overflow-hidden">
-        
-        {/* Header */}
-        <div className="bg-gradient-to-r from-black via-gray-900 to-[#cd040b] text-white p-6 flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold uppercase tracking-tight">February 2026 Headcount Report</h1>
-            <p className="text-sm text-gray-300 mt-1">Consumer Growth & Brand Portfolio | Sarcone Organization</p>
-          </div>
-          <div className="bg-white/10 border border-white/20 rounded px-4 py-2 text-right backdrop-blur-sm">
-            <p className="text-xs font-semibold text-gray-200">Data as of: Feb 2, 2026</p>
-            <p className="text-xs font-bold tracking-wider text-red-100">CONFIDENTIAL</p>
-          </div>
-        </div>
+    <!-- Custom Print Styles -->
+    <style>
+      @media print {
+        @page {
+          size: landscape;
+          margin: 0;
+        }
+        body {
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+          margin: 0;
+          padding: 0;
+          background: white;
+        }
+        #root { margin: 0; padding: 0; width: 100%; }
+        /* Ensure Tailwind generic print overrides don't hide backgrounds */
+        * {
+           -webkit-print-color-adjust: exact !important;   
+           print-color-adjust: exact !important; 
+        }
+      }
+    </style>
+  </head>
+  <body class="bg-gray-100">
+    <div id="root"></div>
 
-        {/* Main Content Container */}
-        <div className="p-8 space-y-8">
+    <!-- 4. The React Application Logic -->
+    <script type="text/babel">
+      
+      // --- ICON COMPONENTS (Replaces lucide-react imports) ---
+      const IconBase = ({ children, className }) => (
+        <svg 
+          xmlns="http://www.w3.org/2000/svg" 
+          width="18" 
+          height="18" 
+          viewBox="0 0 24 24" 
+          fill="none" 
+          stroke="currentColor" 
+          strokeWidth="2" 
+          strokeLinecap="round" 
+          strokeLinejoin="round" 
+          className={className}
+        >
+          {children}
+        </svg>
+      );
 
-          {/* Top KPI Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* KPI 1 */}
-            <div className="bg-white p-6 shadow-[0_4px_20px_rgba(0,0,0,0.1)] border-l-8 border-[#cd040b] relative">
-              <h3 className="text-sm font-bold text-black uppercase tracking-wide mb-1">Headcount</h3>
-              <div className="text-5xl font-extrabold text-black mb-2">146</div>
-              <p className="text-gray-500 text-sm">Slight increase vs. Jan (143)</p>
-            </div>
-            
-            {/* KPI 2 */}
-            <div className="bg-white p-6 shadow-[0_4px_20px_rgba(0,0,0,0.1)] border-l-8 border-black relative">
-              <h3 className="text-sm font-bold text-black uppercase tracking-wide mb-1">Avg Tenure</h3>
-              <div className="text-5xl font-extrabold text-black mb-2">8.8</div>
-              <p className="text-gray-500 text-sm">Years (High Retention)</p>
-            </div>
+      const Users = ({ size, className }) => (
+        <IconBase className={className}>
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </IconBase>
+      );
 
-            {/* KPI 3 */}
-            <div className="bg-white p-6 shadow-[0_4px_20px_rgba(0,0,0,0.1)] border-l-8 border-gray-400 relative">
-              <h3 className="text-sm font-bold text-black uppercase tracking-wide mb-1">Seniority</h3>
-              <div className="text-5xl font-extrabold text-black mb-2">69.5%</div>
-              <p className="text-gray-500 text-sm">Band 6 Density</p>
-            </div>
-          </div>
+      const Briefcase = ({ size, className }) => (
+        <IconBase className={className}>
+          <rect width="20" height="14" x="2" y="7" rx="2" ry="2" />
+          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+        </IconBase>
+      );
 
-          <hr className="border-gray-200" />
+      const MapPin = ({ size, className }) => (
+        <IconBase className={className}>
+          <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+          <circle cx="12" cy="10" r="3" />
+        </IconBase>
+      );
 
-          {/* Bottom Grid Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            
-            {/* Column 1: Workforce Profile */}
-            <div className="space-y-6">
-              <div className="flex justify-between items-center border-b border-black pb-2 mb-4">
-                <h3 className="font-bold text-black uppercase">Workforce Profile</h3>
-                <Briefcase size={18} className="text-[#cd040b]" />
-              </div>
+      const ArrowRightLeft = ({ size, className }) => (
+        <IconBase className={className}>
+          <path d="m16 3 4 4-4 4" />
+          <path d="M20 7H4" />
+          <path d="m8 21-4-4 4-4" />
+          <path d="M4 17h16" />
+        </IconBase>
+      );
 
-              <div className="space-y-5 text-sm">
-                <div className="flex gap-3">
-                  <MapPin className="text-[#cd040b] shrink-0 mt-1" size={18} />
-                  <div>
-                    <span className="font-bold block text-gray-900">Top Hiring Hubs (YTD)</span>
-                    <span className="text-gray-600">Activity shifting toward New York and Basking Ridge.</span>
-                  </div>
-                </div>
+      const ListIcon = ({ size, className }) => (
+        <IconBase className={className}>
+          <line x1="8" x2="21" y1="6" y2="6" />
+          <line x1="8" x2="21" y1="12" y2="12" />
+          <line x1="8" x2="21" y1="18" y2="18" />
+          <line x1="3" x2="3.01" y1="6" y2="6" />
+          <line x1="3" x2="3.01" y1="12" y2="12" />
+          <line x1="3" x2="3.01" y1="18" y2="18" />
+        </IconBase>
+      );
 
-                <div className="flex gap-3">
-                  <Building className="text-[#cd040b] shrink-0 mt-1" size={18} />
-                  <div>
-                    <span className="font-bold block text-gray-900">Work Model</span>
-                    <span className="text-gray-600">95% Hybrid / 5% Mobile or Remote.</span>
-                  </div>
-                </div>
+      const AlertTriangle = ({ size, className }) => (
+        <IconBase className={className}>
+          <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+          <path d="M12 9v4" />
+          <path d="M12 17h.01" />
+        </IconBase>
+      );
 
-                <div className="flex gap-3">
-                  <UserPlus className="text-[#cd040b] shrink-0 mt-1" size={18} />
-                  <div>
-                    <span className="font-bold block text-gray-900">YTD Hiring</span>
-                    <span className="text-gray-600">3 Total Hires (67% Internal Rate).</span>
-                  </div>
-                </div>
-              </div>
+      const UserPlus = ({ size, className }) => (
+        <IconBase className={className}>
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <line x1="19" x2="19" y1="8" y2="14" />
+          <line x1="22" x2="16" y1="11" y2="11" />
+        </IconBase>
+      );
 
-              <div className="pt-6">
-                <div className="flex justify-between items-center border-b border-black pb-2 mb-4">
-                  <h3 className="font-bold text-black uppercase">Internal Mobility</h3>
-                  <ArrowRightLeft size={18} className="text-[#cd040b]" />
-                </div>
-                <div className="space-y-3 text-sm">
-                  <div>
-                    <span className="font-bold block text-gray-900">Tyler Deaton</span>
-                    <span className="text-gray-600">Product Mktg Assoc Dir (Jan 18)</span>
-                    <div className="text-xs text-gray-500 mt-0.5">Job Change → Internal to Susana (NY)</div>
-                  </div>
-                  <div>
-                    <span className="font-bold block text-gray-900">Emily Leedy</span>
-                    <span className="text-gray-600">Digital Marketing Dir (Feb 1)</span>
-                    <div className="text-xs text-gray-500 mt-0.5">Job Change → Internal to Susana (NJ)</div>
-                  </div>
-                </div>
-              </div>
-            </div>
+      const Building = ({ size, className }) => (
+        <IconBase className={className}>
+          <rect width="16" height="20" x="4" y="2" rx="2" ry="2" />
+          <path d="M9 22v-4h6v4" />
+          <path d="M8 6h.01" />
+          <path d="M16 6h.01" />
+          <path d="M12 6h.01" />
+          <path d="M12 10h.01" />
+          <path d="M12 14h.01" />
+          <path d="M16 10h.01" />
+          <path d="M16 14h.01" />
+          <path d="M8 10h.01" />
+          <path d="M8 14h.01" />
+        </IconBase>
+      );
 
-            {/* Column 2: Headcount Overview */}
-            <div>
-              <div className="flex justify-between items-center border-b border-black pb-2 mb-4">
-                <h3 className="font-bold text-black uppercase">Headcount Overview</h3>
-                <Users size={18} className="text-[#cd040b]" />
-              </div>
-              <p className="text-xs text-gray-400 italic mb-4">Direct reports with active teams (Sorted by Volume)</p>
+
+      // --- MAIN DASHBOARD COMPONENT ---
+
+      const HeadcountDashboard = () => {
+        return (
+          <div className="min-h-screen bg-gray-100 p-4 font-sans text-gray-800 flex justify-center print:bg-white print:p-0 print:min-h-0 print:block">
+            <div className="w-full max-w-6xl bg-white shadow-2xl overflow-hidden print:overflow-visible print:shadow-none print:max-w-none print:w-full">
               
-              <div className="space-y-3">
-                <HeadcountBar label="Susana" value={52} max={60} />
-                <HeadcountBar label="Heather" value={45} max={60} />
-                <HeadcountBar label="Javier" value={15} max={60} />
-                <HeadcountBar label="Jeffrey" value={8} max={60} />
-                <HeadcountBar label="Kat" value={8} max={60} />
-                <HeadcountBar label="Michael" value={8} max={60} />
-                <HeadcountBar label="Ruben" value={7} max={60} />
+              {/* Header */}
+              <div className="bg-gradient-to-r from-black via-gray-900 to-[#cd040b] text-white p-6 flex justify-between items-center print:p-8">
+                <div>
+                  <h1 className="text-3xl font-bold uppercase tracking-tight">February 2026 Headcount Report</h1>
+                  <p className="text-sm text-gray-300 mt-1">Consumer Growth & Brand Portfolio | Sarcone Organization</p>
+                </div>
+                <div className="bg-white/10 border border-white/20 rounded px-4 py-2 text-right backdrop-blur-sm print:border-white/40">
+                  <p className="text-xs font-semibold text-gray-200">Data as of: Feb 2, 2026</p>
+                  <p className="text-xs font-bold tracking-wider text-red-100">CONFIDENTIAL</p>
+                </div>
+              </div>
+
+              {/* Main Content Container */}
+              <div className="p-8 space-y-8 print:p-8">
+
+                {/* Top KPI Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 print:grid-cols-3">
+                  {/* KPI 1 */}
+                  <div className="bg-white p-6 shadow-[0_4px_20px_rgba(0,0,0,0.1)] border-l-8 border-[#cd040b] relative print:shadow-none print:border border-gray-200">
+                    <h3 className="text-sm font-bold text-black uppercase tracking-wide mb-1">Headcount</h3>
+                    <div className="text-5xl font-extrabold text-black mb-2">146</div>
+                    <p className="text-gray-500 text-sm">Slight increase vs. Jan (143)</p>
+                  </div>
+                  
+                  {/* KPI 2 */}
+                  <div className="bg-white p-6 shadow-[0_4px_20px_rgba(0,0,0,0.1)] border-l-8 border-black relative print:shadow-none print:border border-gray-200">
+                    <h3 className="text-sm font-bold text-black uppercase tracking-wide mb-1">Avg Tenure</h3>
+                    <div className="text-5xl font-extrabold text-black mb-2">8.8</div>
+                    <p className="text-gray-500 text-sm">Years (High Retention)</p>
+                  </div>
+
+                  {/* KPI 3 */}
+                  <div className="bg-white p-6 shadow-[0_4px_20px_rgba(0,0,0,0.1)] border-l-8 border-gray-400 relative print:shadow-none print:border border-gray-200">
+                    <h3 className="text-sm font-bold text-black uppercase tracking-wide mb-1">Seniority</h3>
+                    <div className="text-5xl font-extrabold text-black mb-2">69.5%</div>
+                    <p className="text-gray-500 text-sm">Band 6 Density</p>
+                  </div>
+                </div>
+
+                <hr className="border-gray-200" />
+
+                {/* Bottom Grid Layout */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 print:grid-cols-3">
+                  
+                  {/* Column 1: Workforce Profile */}
+                  <div className="space-y-6">
+                    <div className="flex justify-between items-center border-b border-black pb-2 mb-4">
+                      <h3 className="font-bold text-black uppercase">Workforce Profile</h3>
+                      <Briefcase className="text-[#cd040b]" />
+                    </div>
+
+                    <div className="space-y-5 text-sm">
+                      <div className="flex gap-3">
+                        <MapPin className="text-[#cd040b] shrink-0 mt-1" />
+                        <div>
+                          <span className="font-bold block text-gray-900">Top Hiring Hubs (YTD)</span>
+                          <span className="text-gray-600">Activity shifting toward New York and Basking Ridge.</span>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-3">
+                        <Building className="text-[#cd040b] shrink-0 mt-1" />
+                        <div>
+                          <span className="font-bold block text-gray-900">Work Model</span>
+                          <span className="text-gray-600">95% Hybrid / 5% Mobile or Remote.</span>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-3">
+                        <UserPlus className="text-[#cd040b] shrink-0 mt-1" />
+                        <div>
+                          <span className="font-bold block text-gray-900">YTD Hiring</span>
+                          <span className="text-gray-600">3 Total Hires (67% Internal Rate).</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-6">
+                      <div className="flex justify-between items-center border-b border-black pb-2 mb-4">
+                        <h3 className="font-bold text-black uppercase">Internal Mobility</h3>
+                        <ArrowRightLeft className="text-[#cd040b]" />
+                      </div>
+                      <div className="space-y-3 text-sm">
+                        <div>
+                          <span className="font-bold block text-gray-900">Tyler Deaton</span>
+                          <span className="text-gray-600">Product Mktg Assoc Dir (Jan 18)</span>
+                          <div className="text-xs text-gray-500 mt-0.5">Job Change → Internal to Susana (NY)</div>
+                        </div>
+                        <div>
+                          <span className="font-bold block text-gray-900">Emily Leedy</span>
+                          <span className="text-gray-600">Digital Marketing Dir (Feb 1)</span>
+                          <div className="text-xs text-gray-500 mt-0.5">Job Change → Internal to Susana (NJ)</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Column 2: Headcount Overview */}
+                  <div>
+                    <div className="flex justify-between items-center border-b border-black pb-2 mb-4">
+                      <h3 className="font-bold text-black uppercase">Headcount Overview</h3>
+                      <Users className="text-[#cd040b]" />
+                    </div>
+                    <p className="text-xs text-gray-400 italic mb-4">Direct reports with active teams (Sorted by Volume)</p>
+                    
+                    <div className="space-y-3">
+                      <HeadcountBar label="Susana" value={52} max={60} />
+                      <HeadcountBar label="Heather" value={45} max={60} />
+                      <HeadcountBar label="Javier" value={15} max={60} />
+                      <HeadcountBar label="Jeffrey" value={8} max={60} />
+                      <HeadcountBar label="Kat" value={8} max={60} />
+                      <HeadcountBar label="Michael" value={8} max={60} />
+                      <HeadcountBar label="Ruben" value={7} max={60} />
+                    </div>
+                  </div>
+
+                  {/* Column 3: Recruitment Pipeline & Anomalies */}
+                  <div className="flex flex-col h-full">
+                    <div className="flex justify-between items-center border-b border-black pb-2 mb-4">
+                      <h3 className="font-bold text-black uppercase">Recruitment Pipeline</h3>
+                      <ListIcon className="text-[#cd040b]" />
+                    </div>
+
+                    <div className="flex-grow">
+                      <table className="w-full text-sm text-left">
+                        <thead>
+                          <tr className="text-xs text-gray-500 border-b border-gray-200">
+                            <th className="pb-2 font-medium">Role</th>
+                            <th className="pb-2 font-medium">Candidate</th>
+                            <th className="pb-2 font-medium">Start</th>
+                            <th className="pb-2 font-medium text-right">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                          <tr>
+                            <td className="py-3">
+                              <div className="font-bold text-gray-900">Digital Marketing</div>
+                              <div className="text-xs text-gray-500">Director</div>
+                            </td>
+                            <td className="py-3 text-gray-700">E. Leedy</td>
+                            <td className="py-3 text-gray-700">Feb 1</td>
+                            <td className="py-3 text-right">
+                              <span className="bg-gray-200 text-gray-800 text-[10px] font-bold px-2 py-1 rounded print:border print:border-gray-400">OFFER</span>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td className="py-3">
+                              <div className="font-bold text-gray-900">Marketing</div>
+                              <div className="text-xs text-gray-500">Sr Mgr</div>
+                            </td>
+                            <td className="py-3 text-gray-700">S. Sadler</td>
+                            <td className="py-3 text-gray-700">Apr 13</td>
+                            <td className="py-3 text-right">
+                              <span className="bg-black text-white text-[10px] font-bold px-2 py-1 rounded print:bg-gray-800">READY</span>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Data Anomaly Box */}
+                    <div className="mt-8 border-2 border-red-300 border-dashed bg-red-50 p-4 rounded-lg relative print:bg-red-50 print:border-red-400">
+                       <div className="flex items-center gap-2 mb-2">
+                          <AlertTriangle className="text-[#cd040b]" size={16} />
+                          <h4 className="text-xs font-bold text-[#cd040b] uppercase">Data Anomaly / Missing</h4>
+                       </div>
+                       <p className="text-xs font-bold text-gray-900 mb-1">Pending Feb Exits Details:</p>
+                       <p className="text-xs text-gray-700 leading-relaxed">
+                         Sarah Baker (Active in roster) is rolling off payroll. Headcount overstated by 1 until processed. Req R-1090106 is the backfill.
+                       </p>
+                    </div>
+
+                  </div>
+
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="px-8 pb-8 pt-4">
+                 <span className="font-bold text-2xl tracking-tighter text-[#cd040b]">verizon</span>
               </div>
             </div>
-
-            {/* Column 3: Recruitment Pipeline & Anomalies */}
-            <div className="flex flex-col h-full">
-              <div className="flex justify-between items-center border-b border-black pb-2 mb-4">
-                <h3 className="font-bold text-black uppercase">Recruitment Pipeline</h3>
-                <List size={18} className="text-[#cd040b]" />
-              </div>
-
-              <div className="flex-grow">
-                <table className="w-full text-sm text-left">
-                  <thead>
-                    <tr className="text-xs text-gray-500 border-b border-gray-200">
-                      <th className="pb-2 font-medium">Role</th>
-                      <th className="pb-2 font-medium">Candidate</th>
-                      <th className="pb-2 font-medium">Start</th>
-                      <th className="pb-2 font-medium text-right">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    <tr>
-                      <td className="py-3">
-                        <div className="font-bold text-gray-900">Digital Marketing</div>
-                        <div className="text-xs text-gray-500">Director</div>
-                      </td>
-                      <td className="py-3 text-gray-700">E. Leedy</td>
-                      <td className="py-3 text-gray-700">Feb 1</td>
-                      <td className="py-3 text-right">
-                        <span className="bg-gray-200 text-gray-800 text-[10px] font-bold px-2 py-1 rounded">OFFER</span>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td className="py-3">
-                        <div className="font-bold text-gray-900">Marketing</div>
-                        <div className="text-xs text-gray-500">Sr Mgr</div>
-                      </td>
-                      <td className="py-3 text-gray-700">S. Sadler</td>
-                      <td className="py-3 text-gray-700">Apr 13</td>
-                      <td className="py-3 text-right">
-                        <span className="bg-black text-white text-[10px] font-bold px-2 py-1 rounded">READY</span>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Data Anomaly Box */}
-              <div className="mt-8 border-2 border-red-300 border-dashed bg-red-50 p-4 rounded-lg relative">
-                 <div className="flex items-center gap-2 mb-2">
-                    <AlertTriangle size={16} className="text-[#cd040b]" />
-                    <h4 className="text-xs font-bold text-[#cd040b] uppercase">Data Anomaly / Missing</h4>
-                 </div>
-                 <p className="text-xs font-bold text-gray-900 mb-1">Pending Feb Exits Details:</p>
-                 <p className="text-xs text-gray-700 leading-relaxed">
-                   Sarah Baker (Active in roster) is rolling off payroll. Headcount overstated by 1 until processed. Req R-1090106 is the backfill.
-                 </p>
-              </div>
-
-            </div>
-
           </div>
-        </div>
+        );
+      };
 
-        {/* Footer */}
-        <div className="px-8 pb-8 pt-4">
-           <span className="font-bold text-2xl tracking-tighter text-[#cd040b]">verizon</span>
-        </div>
-      </div>
-    </div>
-  );
-};
+      // Helper component for the bar chart rows
+      const HeadcountBar = ({ label, value, max }) => {
+        const widthPercentage = (value / max) * 100;
+        
+        return (
+          <div className="flex items-center group">
+            <div className="w-20 font-bold text-sm text-gray-800 shrink-0">{label}</div>
+            <div className="flex-grow h-8 bg-gray-100 rounded-sm relative overflow-hidden flex items-center print:bg-gray-200">
+              <div 
+                className="h-full bg-gradient-to-r from-[#cd040b] to-[#ff4d4d] rounded-sm shadow-sm transition-all duration-500 ease-out print:bg-[#cd040b] print:from-transparent print:to-transparent"
+                style={{ width: widthPercentage + '%' }}
+              ></div>
+              <span className="absolute right-2 text-xs font-bold text-gray-500 print:text-black">{value}</span>
+            </div>
+          </div>
+        );
+      };
 
-// Helper component for the bar chart rows
-const HeadcountBar = ({ label, value, max }) => {
-  const widthPercentage = (value / max) * 100;
-  
-  return (
-    <div className="flex items-center group">
-      <div className="w-20 font-bold text-sm text-gray-800 shrink-0">{label}</div>
-      <div className="flex-grow h-8 bg-gray-100 rounded-sm relative overflow-hidden flex items-center">
-        <div 
-          className="h-full bg-gradient-to-r from-[#cd040b] to-[#ff4d4d] rounded-sm shadow-sm transition-all duration-500 ease-out"
-          style={{ width: `${widthPercentage}%` }}
-        ></div>
-        {/* Value displayed inside the bar if it's wide enough, otherwise outside could be an option, 
-            but strictly following the image style, the number is often at the end or white text inside.
-            We'll put it at the end of the bar inside white for high contrast or just outside. 
-            The image shows white text inside the red bar usually. */}
-        <span className="absolute right-2 text-xs font-bold text-gray-500">{value}</span>
-      </div>
-    </div>
-  );
-};
+      // Render the App
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      root.render(<HeadcountDashboard />);
 
-export default HeadcountDashboard;
+    </script>
+  </body>
+</html>
