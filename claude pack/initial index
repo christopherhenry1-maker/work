@@ -1512,6 +1512,115 @@
             font-size: 0.85rem;
         }
 
+        .agenda-input-panel {
+            border: 1px solid var(--color-slate-200);
+            border-radius: 0.85rem;
+            padding: 1rem 1.2rem;
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+        }
+
+        .agenda-input-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .agenda-input-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--color-slate-900);
+        }
+
+        .agenda-input-subtitle {
+            font-size: 0.8rem;
+            color: var(--color-slate-500);
+            margin-top: 0.2rem;
+        }
+
+        .agenda-input-form {
+            margin-top: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .agenda-input-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 0.85rem;
+        }
+
+        .agenda-input-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+        }
+
+        .agenda-topic-edit-row {
+            display: grid;
+            grid-template-columns: minmax(200px, 1fr) minmax(130px, 180px) 40px;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .agenda-topic-edit-row + .agenda-topic-edit-row {
+            margin-top: 0.6rem;
+        }
+
+        .agenda-topic-remove {
+            border: none;
+            background: var(--color-slate-200);
+            color: var(--color-slate-700);
+            border-radius: 0.5rem;
+            height: 40px;
+            width: 40px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .agenda-topic-remove:hover {
+            background: var(--color-slate-300);
+        }
+
+        .agenda-overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 0.75rem;
+        }
+
+        .agenda-overview-card {
+            background: var(--color-slate-50);
+            border: 1px solid var(--color-slate-200);
+            border-radius: 0.85rem;
+            padding: 0.85rem 1rem;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
+        }
+
+        .agenda-overview-title {
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--color-slate-500);
+        }
+
+        .agenda-overview-value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--color-slate-900);
+            margin-top: 0.35rem;
+        }
+
+        .agenda-overview-meta {
+            font-size: 0.75rem;
+            color: var(--color-slate-500);
+            margin-top: 0.25rem;
+        }
+
         .agenda-date-group {
             border: 1px solid var(--color-slate-200);
             border-radius: 0.85rem;
@@ -1568,9 +1677,33 @@
 
         .agenda-topic-list {
             margin-top: 0.6rem;
-            padding-left: 1.2rem;
+            padding-left: 0;
             color: var(--color-slate-700);
             font-size: 0.88rem;
+            list-style: none;
+            display: grid;
+            gap: 0.45rem;
+        }
+
+        .agenda-topic-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            padding: 0.45rem 0.6rem;
+            border-radius: 0.6rem;
+            background: var(--color-slate-50);
+            border: 1px solid var(--color-slate-200);
+        }
+
+        .agenda-topic-duration {
+            font-size: 0.68rem;
+            font-weight: 700;
+            color: var(--color-slate-600);
+            padding: 0.2rem 0.5rem;
+            border-radius: 999px;
+            background: var(--color-slate-200);
+            white-space: nowrap;
         }
 
         .agenda-link {
@@ -2664,6 +2797,45 @@
                                 </h2>
                                 <span class="agenda-summary">Upcoming meeting agendas and topics</span>
                             </div>
+                            <div class="agenda-input-panel">
+                                <div class="agenda-input-header">
+                                    <div>
+                                        <div class="agenda-input-title">Add Agenda Entry</div>
+                                        <div class="agenda-input-subtitle">Capture meeting agendas directly from the dashboard.</div>
+                                    </div>
+                                    <button class="btn-secondary" id="agendaEntryToggle" onclick="toggleAgendaEntryForm()">Add Agenda</button>
+                                </div>
+                                <div id="agendaEntryForm" class="agenda-input-form hidden">
+                                    <div class="agenda-input-grid">
+                                        <div class="form-group">
+                                            <label class="input-label">Agenda Type</label>
+                                            <select class="input-field" id="agendaEntryType">
+                                                <option value="">-- Select Type --</option>
+                                                <option value="Marketing Deep Dives">Marketing Deep Dives</option>
+                                                <option value="Brand Deep Dives">Brand Deep Dives</option>
+                                                <option value="Judge's Table">Judge's Table</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="input-label">Meeting Date</label>
+                                            <input type="date" class="input-field" id="agendaEntryDate">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="input-label">Deck Link (optional)</label>
+                                            <input type="url" class="input-field" id="agendaEntryLink" placeholder="https://link-to-deck">
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="input-label">Topics & Durations</label>
+                                        <div id="agendaEntryTopicsList"></div>
+                                        <button class="btn-secondary" onclick="addAgendaEntryTopic()">Add Topic</button>
+                                    </div>
+                                    <div class="agenda-input-actions">
+                                        <button class="btn-secondary" onclick="resetAgendaEntryForm()">Reset</button>
+                                        <button class="btn-primary" onclick="saveAgendaEntry()">Save Agenda</button>
+                                    </div>
+                                </div>
+                            </div>
                             <div id="agendaPageContent">
                                 <div class="loading-message">Loading agendas...</div>
                             </div>
@@ -2854,6 +3026,7 @@ let selectedRecurringMeetingName = '';
 let selectedAgendaDate = '';
 let agendaTopics = [''];
 let agendaLink = '';
+let agendaEntryTopics = [{ title: '', duration: '' }];
 
 // ============================================================================
 // INITIALIZATION
@@ -2862,6 +3035,7 @@ let agendaLink = '';
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Dashboard initializing...');
     initializeCalendar();
+    renderAgendaEntryTopics();
     
     // Check if google is defined (Apps Script environment) or not (Preview/Local)
     if (typeof google === 'undefined' || typeof google.script === 'undefined') {
@@ -2879,6 +3053,48 @@ document.addEventListener('DOMContentLoaded', function() {
             meetings: [
                 { id: "m1", title: "Weekly Staff Sync", time: "09:00", date: new Date().toISOString().split('T')[0], category: "meeting" },
                 { id: "m2", title: "Project Alpha Review", time: "14:00", date: new Date().toISOString().split('T')[0], category: "deep-work" }
+            ],
+            agendaItems: [
+                {
+                    id: "a1",
+                    title: "Marketing Deep Dives",
+                    meetingType: "Marketing Deep Dives",
+                    date: "2026-02-06",
+                    dateFormatted: "Feb 06",
+                    agendaLink: "#",
+                    linkLabel: "Open Deck",
+                    topics: [
+                        { title: "Brand heatmap refresh", duration: "30 min" },
+                        { title: "Value props alignment", duration: "45 min" },
+                        { title: "Q2 launch sequencing", duration: "25 min" }
+                    ]
+                },
+                {
+                    id: "a2",
+                    title: "Brand Deep Dives",
+                    meetingType: "Brand Deep Dives",
+                    date: "2026-02-06",
+                    dateFormatted: "Feb 06",
+                    agendaLink: "#",
+                    linkLabel: "Open Deck",
+                    topics: [
+                        { title: "Category share review", duration: "40 min" },
+                        { title: "Promo architecture", duration: "35 min" }
+                    ]
+                },
+                {
+                    id: "a3",
+                    title: "Judge's Table",
+                    meetingType: "Judge's Table",
+                    date: "2026-02-10",
+                    dateFormatted: "Feb 10",
+                    agendaLink: "#",
+                    linkLabel: "Open Deck",
+                    topics: [
+                        { title: "Creative scoring", duration: "20 min" },
+                        { title: "Final approvals", duration: "30 min" }
+                    ]
+                }
             ],
             recurringMeetings: [
                 { id: "r1", name: "Weekly Staff Sync" },
@@ -3565,6 +3781,40 @@ function getMeetingColorClass(meeting) {
 // AGENDA PAGE RENDERING
 // ============================================================================
 
+function renderAgendaTopicsList(topics) {
+    if (!topics || !topics.length) {
+        return '<div style="margin-top: 0.5rem; color: var(--color-slate-500); font-size: 0.85rem;">No topics listed yet.</div>';
+    }
+    
+    const normalized = topics.map(topic => {
+        if (typeof topic === 'string') {
+            return { title: topic, duration: '' };
+        }
+        if (topic && typeof topic === 'object') {
+            return {
+                title: topic.title || topic.topic || topic.name || '',
+                duration: topic.duration || topic.length || ''
+            };
+        }
+        return null;
+    }).filter(t => t && t.title);
+    
+    if (normalized.length === 0) {
+        return '<div style="margin-top: 0.5rem; color: var(--color-slate-500); font-size: 0.85rem;">No topics listed yet.</div>';
+    }
+    
+    return `
+        <ul class="agenda-topic-list">
+            ${normalized.map(t => `
+                <li class="agenda-topic-row">
+                    <span>${escapeHtml(t.title)}</span>
+                    ${t.duration ? `<span class="agenda-topic-duration">${escapeHtml(t.duration)}</span>` : ''}
+                </li>
+            `).join('')}
+        </ul>
+    `;
+}
+
 function renderAgendaPage() {
     const container = document.getElementById('agendaPageContent');
     if (!container) return;
@@ -3572,19 +3822,54 @@ function renderAgendaPage() {
     const agendas = dashboardData.agendaItems || [];
     if (!agendas.length) {
         container.innerHTML = '<p style="color: var(--color-slate-500); text-align: center; padding: 2rem;">No upcoming agendas found.</p>';
+        const summary = document.querySelector('.agenda-summary');
+        if (summary) summary.textContent = 'No upcoming agendas found.';
         return;
     }
     
     const grouped = {};
+    const typeCounts = {};
     agendas.forEach(item => {
         const key = item.date || '';
         if (!grouped[key]) grouped[key] = [];
         grouped[key].push(item);
+        
+        const typeKey = item.meetingType || item.title || 'Agenda';
+        typeCounts[typeKey] = (typeCounts[typeKey] || 0) + 1;
     });
     
     const sortedDates = Object.keys(grouped).sort();
+    const summary = document.querySelector('.agenda-summary');
+    if (summary) {
+        summary.textContent = `${agendas.length} upcoming agendas • ${sortedDates.length} dates`;
+    }
     
-    container.innerHTML = sortedDates.map(dateKey => {
+    const overviewCards = [
+        {
+            title: 'Total Agendas',
+            value: String(agendas.length),
+            meta: `${sortedDates.length} upcoming dates`
+        },
+        ...Object.keys(typeCounts).sort().map(type => ({
+            title: type,
+            value: String(typeCounts[type]),
+            meta: 'Upcoming sessions'
+        }))
+    ];
+    
+    const overviewHtml = `
+        <div class="agenda-overview">
+            ${overviewCards.map(card => `
+                <div class="agenda-overview-card">
+                    <div class="agenda-overview-title">${escapeHtml(card.title)}</div>
+                    <div class="agenda-overview-value">${escapeHtml(card.value)}</div>
+                    <div class="agenda-overview-meta">${escapeHtml(card.meta)}</div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+    
+    container.innerHTML = overviewHtml + sortedDates.map(dateKey => {
         const items = grouped[dateKey] || [];
         const dateTitle = dateKey ? formatDate(dateKey) : 'Unknown Date';
         
@@ -3594,35 +3879,172 @@ function renderAgendaPage() {
                 <div class="agenda-date-title">${escapeHtml(dateTitle)}</div>
                 ${items.map(item => {
                     const timeDisplay = formatTimeStandard(item.time || item.time24 || '');
+                    const metaParts = [];
+                    if (timeDisplay) metaParts.push(timeDisplay);
+                    if (item.dateFormatted || item.date) metaParts.push(item.dateFormatted || item.date);
+                    if (item.meetingType && item.meetingType !== item.title) metaParts.push(item.meetingType);
+                    const metaLine = metaParts.join(' • ');
+                    const linkLabel = item.linkLabel || 'Open Agenda';
                     const agendaLink = item.agendaLink ? `
                         <a class="agenda-link" href="${escapeHtml(item.agendaLink)}" target="_blank">
                             <svg class="icon-xs" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
                             </svg>
-                            Open Agenda
+                            ${escapeHtml(linkLabel)}
                         </a>
                     ` : '';
-                    
-                    const topics = item.topics && item.topics.length
-                        ? `<ul class="agenda-topic-list">${item.topics.map(t => `<li>${escapeHtml(t)}</li>`).join('')}</ul>`
-                        : '<div style="margin-top: 0.5rem; color: var(--color-slate-500); font-size: 0.85rem;">No topics listed yet.</div>';
                     
                     return `
                         <div class="agenda-meeting">
                             <div class="agenda-meeting-header">
                                 <div>
                                     <div class="agenda-meeting-title">${escapeHtml(cleanMeetingTitle(item.title || ''))}</div>
-                                    <div class="agenda-meeting-meta">${timeDisplay ? escapeHtml(timeDisplay) + ' • ' : ''}${escapeHtml(item.dateFormatted || item.date || '')}</div>
+                                    <div class="agenda-meeting-meta">${metaLine ? escapeHtml(metaLine) : ''}</div>
                                 </div>
                                 ${agendaLink}
                             </div>
-                            ${topics}
+                            ${renderAgendaTopicsList(item.topics || [])}
                         </div>
                     `;
                 }).join('')}
             </div>
         `;
     }).join('');
+}
+
+// ============================================================================
+// AGENDA ENTRY (UI -> AGENDA TABS)
+// ============================================================================
+
+function toggleAgendaEntryForm() {
+    const form = document.getElementById('agendaEntryForm');
+    const toggleBtn = document.getElementById('agendaEntryToggle');
+    if (!form || !toggleBtn) return;
+    form.classList.toggle('hidden');
+    toggleBtn.textContent = form.classList.contains('hidden') ? 'Add Agenda' : 'Hide Form';
+}
+
+function renderAgendaEntryTopics() {
+    const container = document.getElementById('agendaEntryTopicsList');
+    if (!container) return;
+    
+    container.innerHTML = agendaEntryTopics.map((topic, index) => `
+        <div class="agenda-topic-edit-row">
+            <input
+                type="text"
+                class="input-field"
+                placeholder="Topic"
+                value="${escapeHtml(topic.title || '')}"
+                oninput="updateAgendaEntryTopic(${index}, 'title', this.value)"
+            >
+            <input
+                type="text"
+                class="input-field"
+                placeholder="Duration (e.g., 30 min)"
+                value="${escapeHtml(topic.duration || '')}"
+                oninput="updateAgendaEntryTopic(${index}, 'duration', this.value)"
+            >
+            <button class="agenda-topic-remove" onclick="removeAgendaEntryTopic(${index})" title="Remove topic">×</button>
+        </div>
+    `).join('');
+}
+
+function updateAgendaEntryTopic(index, field, value) {
+    if (!agendaEntryTopics[index]) return;
+    agendaEntryTopics[index][field] = value;
+}
+
+function addAgendaEntryTopic() {
+    agendaEntryTopics.push({ title: '', duration: '' });
+    renderAgendaEntryTopics();
+}
+
+function removeAgendaEntryTopic(index) {
+    if (agendaEntryTopics.length <= 1) return;
+    agendaEntryTopics.splice(index, 1);
+    renderAgendaEntryTopics();
+}
+
+function resetAgendaEntryForm() {
+    const typeSelect = document.getElementById('agendaEntryType');
+    const dateInput = document.getElementById('agendaEntryDate');
+    const linkInput = document.getElementById('agendaEntryLink');
+    
+    if (typeSelect) typeSelect.value = '';
+    if (dateInput) dateInput.value = '';
+    if (linkInput) linkInput.value = '';
+    
+    agendaEntryTopics = [{ title: '', duration: '' }];
+    renderAgendaEntryTopics();
+}
+
+function saveAgendaEntry() {
+    const typeSelect = document.getElementById('agendaEntryType');
+    const dateInput = document.getElementById('agendaEntryDate');
+    const linkInput = document.getElementById('agendaEntryLink');
+    
+    if (!typeSelect || !dateInput) return;
+    
+    const meetingType = typeSelect.value;
+    const meetingDate = dateInput.value;
+    const agendaLink = linkInput ? linkInput.value.trim() : '';
+    const topics = agendaEntryTopics
+        .map(t => ({ title: (t.title || '').trim(), duration: (t.duration || '').trim() }))
+        .filter(t => t.title);
+    
+    if (!meetingType) {
+        alert('Please select an agenda type.');
+        return;
+    }
+    if (!meetingDate) {
+        alert('Please select a meeting date.');
+        return;
+    }
+    if (!topics.length && !agendaLink) {
+        alert('Add at least one topic or a deck link.');
+        return;
+    }
+    
+    const payload = {
+        meetingType: meetingType,
+        date: meetingDate,
+        agendaLink: agendaLink,
+        topics: topics
+    };
+    
+    if (typeof google !== 'undefined' && google.script) {
+        google.script.run
+            .withSuccessHandler(function(result) {
+                if (result && result.success) {
+                    resetAgendaEntryForm();
+                    loadDashboardData();
+                    alert('Agenda entry saved.');
+                } else {
+                    alert('Failed to save agenda: ' + (result && result.error ? result.error : 'Unknown error'));
+                }
+            })
+            .withFailureHandler(function(error) {
+                alert('Failed to save agenda: ' + error);
+            })
+            .addAgendaEntry(payload);
+    } else {
+        const dateObj = new Date(meetingDate + 'T00:00:00');
+        const dateFormatted = !isNaN(dateObj) ? dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+        dashboardData.agendaItems = dashboardData.agendaItems || [];
+        dashboardData.agendaItems.push({
+            id: 'preview-' + Date.now(),
+            title: meetingType,
+            meetingType: meetingType,
+            date: meetingDate,
+            dateFormatted: dateFormatted,
+            agendaLink: agendaLink,
+            linkLabel: 'Open Deck',
+            topics: topics
+        });
+        resetAgendaEntryForm();
+        renderAgendaPage();
+        alert('Agenda entry saved (preview mode).');
+    }
 }
 
 // ============================================================================

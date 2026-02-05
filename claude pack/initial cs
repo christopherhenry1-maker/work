@@ -31,6 +31,21 @@ const CONFIG = {
   MEETINGS_TAB_NAME: 'Meetings',
   DELIVERABLES_TAB_NAME: 'Document Repository',
   ARCHIVE_TAB_NAME: 'Meeting Archive', // NEW - for completed meetings
+
+  // Agenda tabs (Deep Dives + Judge's Table)
+  AGENDA_SHEET_ID: '1ZmC-04S_OdhuoJs-XIBiOujj5rtsJTZNOiH26_0LTgk',
+  AGENDA_TAB_NAMES: [
+    'Marketing Deep Dives',
+    'Brand Deep Dives',
+    "Judge's Table"
+  ],
+  AGENDA_COLUMNS: {
+    DATE: 0,          // Column A
+    TOPIC_START: 1,   // Column B
+    TOPIC_COUNT: 6,   // B, D, F, H, J, L
+    TOPIC_STRIDE: 2,  // Each topic is followed by its duration
+    LINK: 13          // Column N (Link to Deck)
+  },
   
   // Calendar Settings for Auto-Sync
   EXECUTIVE_CALENDAR_ID: 'michael.sarcone@verizon.com',
@@ -1239,9 +1254,124 @@ function extractAgendaTopicsFromNotes(notes) {
 }
 
 /**
- * Get agenda items for upcoming meetings
+ * Normalize agenda dates
  */
-function getAgendaItems() {
+function normalizeAgendaDate(rawDate) {
+  if (!rawDate) return null;
+  let dateObj = null;
+  if (rawDate instanceof Date) {
+    dateObj = new Date(rawDate);
+  } else {
+    const parsed = new Date(rawDate);
+    if (parsed instanceof Date && !isNaN(parsed.getTime())) {
+      dateObj = parsed;
+    }
+  }
+  if (!dateObj) return null;
+  dateObj.setHours(0, 0, 0, 0);
+  return {
+    dateObj: dateObj,
+    dateKey: Utilities.formatDate(dateObj, Session.getScriptTimeZone(), 'yyyy-MM-dd'),
+    dateFormatted: Utilities.formatDate(dateObj, Session.getScriptTimeZone(), 'MMM dd')
+  };
+}
+
+/**
+ * Normalize agenda durations
+ */
+function normalizeAgendaDuration(rawDuration) {
+  if (rawDuration === null || typeof rawDuration === 'undefined' || rawDuration === '') return '';
+  if (rawDuration instanceof Date) {
+    return Utilities.formatDate(rawDuration, Session.getScriptTimeZone(), 'H:mm');
+  }
+  return String(rawDuration).trim();
+}
+
+/**
+ * Get agenda items from agenda tabs
+ */
+function getAgendaItemsFromAgendaTabs() {
+  try {
+    const agendaItems = [];
+    let foundTab = false;
+    const tabNames = CONFIG.AGENDA_TAB_NAMES || [];
+    if (!tabNames.length) return { items: [], foundTab: false };
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    tabNames.forEach(tabName => {
+      const sheet = getSheet(CONFIG.AGENDA_SHEET_ID, tabName);
+      if (!sheet) {
+        Logger.log('Agenda tab not found: ' + tabName);
+        return;
+      }
+      foundTab = true;
+      
+      if (sheet.getLastRow() < 2) return;
+      
+      const range = sheet.getDataRange();
+      const values = range.getValues();
+      const richTextValues = range.getRichTextValues();
+      const formulas = range.getFormulas();
+      
+      for (let i = 1; i < values.length; i++) {
+        const row = values[i];
+        const dateInfo = normalizeAgendaDate(row[CONFIG.AGENDA_COLUMNS.DATE]);
+        if (!dateInfo) continue;
+        if (dateInfo.dateObj < today) continue;
+        
+        const topics = [];
+        for (let t = 0; t < CONFIG.AGENDA_COLUMNS.TOPIC_COUNT; t++) {
+          const topicCol = CONFIG.AGENDA_COLUMNS.TOPIC_START + (t * CONFIG.AGENDA_COLUMNS.TOPIC_STRIDE);
+          const durationCol = topicCol + 1;
+          const topicValue = row[topicCol];
+          if (!topicValue || String(topicValue).trim() === '') continue;
+          const durationValue = row[durationCol];
+          topics.push({
+            title: String(topicValue).trim(),
+            duration: normalizeAgendaDuration(durationValue)
+          });
+        }
+        
+        const linkCell = row[CONFIG.AGENDA_COLUMNS.LINK];
+        const richLinkCell = richTextValues[i] ? richTextValues[i][CONFIG.AGENDA_COLUMNS.LINK] : null;
+        const formulaCell = formulas[i] ? formulas[i][CONFIG.AGENDA_COLUMNS.LINK] : '';
+        const agendaLink = getUrlFromRichText(richLinkCell, linkCell, formulaCell);
+        
+        if (topics.length === 0 && !agendaLink) continue;
+        
+        agendaItems.push({
+          id: 'agenda-' + tabName.toString().replace(/\s+/g, '-').toLowerCase() + '-' + i,
+          title: tabName,
+          meetingType: tabName,
+          date: dateInfo.dateKey,
+          dateFormatted: dateInfo.dateFormatted,
+          agendaLink: agendaLink,
+          linkLabel: 'Open Deck',
+          topics: topics
+        });
+      }
+    });
+    
+    // Sort by date/time
+    agendaItems.sort((a, b) => {
+      const dateCompare = String(a.date).localeCompare(String(b.date));
+      if (dateCompare !== 0) return dateCompare;
+      return String(a.meetingType || '').localeCompare(String(b.meetingType || ''));
+    });
+    
+    return { items: agendaItems, foundTab: foundTab };
+  } catch (error) {
+    Logger.log('Error getting agenda items from tabs: ' + error);
+    return { items: [], foundTab: false };
+  }
+}
+
+/**
+ * Get agenda items for upcoming meetings (legacy fallback)
+ */
+function getAgendaItemsFromMeetings() {
   try {
     const meetings = getMeetings();
     if (!meetings || meetings.length === 0) return [];
@@ -1283,8 +1413,58 @@ function getAgendaItems() {
     
     return agendaItems;
   } catch (error) {
-    Logger.log('Error getting agenda items: ' + error);
+    Logger.log('Error getting agenda items from meetings: ' + error);
     return [];
+  }
+}
+
+/**
+ * Get agenda items for upcoming meetings
+ */
+function getAgendaItems() {
+  const tabResult = getAgendaItemsFromAgendaTabs();
+  if (tabResult && tabResult.foundTab) return tabResult.items;
+  return getAgendaItemsFromMeetings();
+}
+
+/**
+ * Add agenda entry to agenda tabs from dashboard UI
+ */
+function addAgendaEntry(data) {
+  try {
+    const meetingType = data && data.meetingType ? String(data.meetingType).trim() : '';
+    const dateValue = data && data.date ? String(data.date).trim() : '';
+    const topics = data && data.topics ? data.topics : [];
+    const agendaLink = data && data.agendaLink ? String(data.agendaLink).trim() : '';
+    
+    if (!meetingType) return { success: false, error: 'Missing agenda type' };
+    if (!dateValue) return { success: false, error: 'Missing meeting date' };
+    
+    const sheet = getSheet(CONFIG.AGENDA_SHEET_ID, meetingType);
+    if (!sheet) return { success: false, error: 'Agenda tab not found: ' + meetingType };
+    
+    const row = new Array(CONFIG.AGENDA_COLUMNS.LINK + 1).fill('');
+    const dateObj = new Date(dateValue + 'T00:00:00');
+    row[CONFIG.AGENDA_COLUMNS.DATE] = isNaN(dateObj.getTime()) ? dateValue : dateObj;
+    
+    for (let i = 0; i < CONFIG.AGENDA_COLUMNS.TOPIC_COUNT; i++) {
+      const topic = topics[i];
+      if (!topic || !topic.title) continue;
+      const topicCol = CONFIG.AGENDA_COLUMNS.TOPIC_START + (i * CONFIG.AGENDA_COLUMNS.TOPIC_STRIDE);
+      row[topicCol] = String(topic.title).trim();
+      row[topicCol + 1] = topic.duration ? String(topic.duration).trim() : '';
+    }
+    
+    if (agendaLink) {
+      row[CONFIG.AGENDA_COLUMNS.LINK] = agendaLink;
+    }
+    
+    sheet.appendRow(row);
+    
+    return { success: true };
+  } catch (error) {
+    Logger.log('Error adding agenda entry: ' + error);
+    return { success: false, error: error.toString() };
   }
 }
 
