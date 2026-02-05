@@ -1,0 +1,20 @@
+On the Marketing Deep Dives tab:
+The Meeting Date is in Column A.
+The Topics are in Columns B, D, F, H, J, and L (six topics total).
+Their Durations are in Columns C, E, G, I, J, and M (six durations total, corresponding to the topic columns).
+The Meeting Link is in Column N (Link to Deck).
+2. Brand Deep Dives Tab
+
+On the Brand Deep Dives tab:
+The Meeting Date is in Column A.
+The Topics are in Columns B, D, F, H, J, and L.
+Their Durations are in Columns C, E, G, I, J, and M.
+The Meeting Link is in Column N (Link to Deck).
+3. Judge's Table Tab
+
+On the Judge's Table tab:
+The Meeting Date is in Column A.
+The Topics are in Columns B, D, F, H, J, and L.
+Their Durations are in Columns C, E, G, I, J, and M.
+The Meeting Link is in Column N (Link to Deck).
+To build your agenda, your script should iterate through the rows, check if the date in Column A is today or in the future, and if so, extract the data from all Topic/Duration columns (B through M) and the Link in N.
