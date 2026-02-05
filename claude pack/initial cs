@@ -672,6 +672,7 @@ function getAllDashboardData() {
       exec1Deliverables: [],
       exec2Deliverables: [],
       meetings: [],
+      agendaItems: [],
       recurringMeetings: [],
       adminLinks: [],
       kpiLinks: [],
@@ -702,6 +703,13 @@ function getAllDashboardData() {
     } catch (e) {
       Logger.log('❌ Error getting Meetings: ' + e);
       Logger.log('Full error: ' + e.stack);
+    }
+
+    try {
+      result.agendaItems = getAgendaItems();
+      Logger.log('✅ Agendas: ' + result.agendaItems.length + ' items');
+    } catch (e) {
+      Logger.log('❌ Error getting Agendas: ' + e);
     }
     
     try {
@@ -767,6 +775,7 @@ function getAllDashboardData() {
       exec1Deliverables: [],
       exec2Deliverables: [],
       meetings: [],
+      agendaItems: [],
       recurringMeetings: [],
       adminLinks: [],
       kpiLinks: [],
@@ -805,6 +814,7 @@ function testSerializability() {
         exec1: data.exec1Deliverables.length,
         exec2: data.exec2Deliverables.length,
         meetings: data.meetings.length,
+        agendas: data.agendaItems.length,
         recurring: data.recurringMeetings.length,
         admin: data.adminLinks.length,
         kpi: data.kpiLinks.length,
@@ -1032,6 +1042,39 @@ function normalizeMeetingTime(rawTime) {
 }
 
 /**
+ * Extract URL from a RichTextValue or fallback cell value
+ */
+function getUrlFromRichText(richText, fallbackValue, fallbackFormula) {
+  try {
+    if (richText) {
+      const direct = richText.getLinkUrl && richText.getLinkUrl();
+      if (direct) return direct;
+      
+      if (richText.getRuns) {
+        const runs = richText.getRuns();
+        for (let i = 0; i < runs.length; i++) {
+          const url = runs[i].getLinkUrl();
+          if (url) return url;
+        }
+      }
+    }
+  } catch (e) {
+    Logger.log('Warning: Rich text URL extraction failed: ' + e);
+  }
+  
+  if (fallbackFormula) {
+    const formulaMatch = String(fallbackFormula).match(/HYPERLINK\(\"([^\"]+)\"/i);
+    if (formulaMatch && formulaMatch[1]) return formulaMatch[1];
+  }
+  
+  if (fallbackValue && String(fallbackValue).match(/^https?:\/\//i)) {
+    return String(fallbackValue).trim();
+  }
+  
+  return '';
+}
+
+/**
  * Get meetings for 2-week schedule view
  */
 function getMeetings() {
@@ -1041,6 +1084,8 @@ function getMeetings() {
     
     const dataRange = sheet.getDataRange();
     const values = dataRange.getValues();
+    const richTextValues = dataRange.getRichTextValues();
+    const formulas = dataRange.getFormulas();
     
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -1058,6 +1103,7 @@ function getMeetings() {
       if (row[CONFIG.MEETING_COLUMNS.APPROVED] !== true) continue;
       
       const meetingDate = new Date(row[CONFIG.MEETING_COLUMNS.DATE]);
+      if (!(meetingDate instanceof Date) || isNaN(meetingDate.getTime())) continue;
       
       // Skip weekends (0 = Sunday, 6 = Saturday)
       const dayOfWeek = meetingDate.getDay();
@@ -1075,6 +1121,14 @@ function getMeetings() {
         
         const isHotTopic = row[CONFIG.MEETING_COLUMNS.HOT_TOPIC] === true || !!hotTopicLevel;
         
+        const richLinkCell = richTextValues[i] ? richTextValues[i][CONFIG.MEETING_COLUMNS.DELIVERABLE_LINK] : null;
+        const formulaCell = formulas[i] ? formulas[i][CONFIG.MEETING_COLUMNS.DELIVERABLE_LINK] : '';
+        const deliverableLink = getUrlFromRichText(
+          richLinkCell,
+          row[CONFIG.MEETING_COLUMNS.DELIVERABLE_LINK],
+          formulaCell
+        );
+        
         meetings.push({
           id: row[CONFIG.MEETING_COLUMNS.EVENT_ID] || 'meeting-' + i,
           title: row[CONFIG.MEETING_COLUMNS.MEETING_NAME] || '',
@@ -1090,7 +1144,7 @@ function getMeetings() {
           hotTopicLevel: hotTopicLevel,
           colorId: colorMeta,
           prepRequired: row[CONFIG.MEETING_COLUMNS.PREP_REQUIRED] === true,
-          deliverableLink: row[CONFIG.MEETING_COLUMNS.DELIVERABLE_LINK] || '',
+          deliverableLink: deliverableLink || '',
           notes: row[CONFIG.MEETING_COLUMNS.NOTES] || '',
           dayOfWeek: meetingDate.getDay()
         });
@@ -1153,6 +1207,83 @@ function getRecurringMeetings() {
     return recurringMeetings;
   } catch (error) {
     Logger.log('Error getting recurring meetings: ' + error);
+    return [];
+  }
+}
+
+/**
+ * Extract agenda topics from a notes field
+ */
+function extractAgendaTopicsFromNotes(notes) {
+  if (!notes) return [];
+  
+  const marker = 'Agenda Topics:';
+  const text = String(notes);
+  const index = text.indexOf(marker);
+  if (index === -1) return [];
+  
+  const raw = text.slice(index + marker.length).trim();
+  if (!raw) return [];
+  
+  const lines = raw.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+  const topics = [];
+  
+  lines.forEach(line => {
+    let cleaned = line.replace(/^[-•\d\.\)\s]+/, '').trim();
+    if (!cleaned) return;
+    if (cleaned.toLowerCase().startsWith('notes:')) return;
+    topics.push(cleaned);
+  });
+  
+  return topics;
+}
+
+/**
+ * Get agenda items for upcoming meetings
+ */
+function getAgendaItems() {
+  try {
+    const meetings = getMeetings();
+    if (!meetings || meetings.length === 0) return [];
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const agendaItems = [];
+    
+    meetings.forEach(meeting => {
+      if (!meeting || !meeting.date) return;
+      const meetingDate = new Date(meeting.date + 'T00:00:00');
+      if (!(meetingDate instanceof Date) || isNaN(meetingDate.getTime())) return;
+      if (meetingDate < today) return;
+      
+      const topics = extractAgendaTopicsFromNotes(meeting.notes || '');
+      const agendaLink = meeting.deliverableLink || '';
+      
+      if (topics.length === 0 && !agendaLink) return;
+      
+      agendaItems.push({
+        id: meeting.id,
+        title: meeting.title,
+        date: meeting.date,
+        dateFormatted: meeting.dateFormatted,
+        time: meeting.time,
+        time24: meeting.time24,
+        agendaLink: agendaLink,
+        topics: topics
+      });
+    });
+    
+    // Sort by date/time
+    agendaItems.sort((a, b) => {
+      const dateCompare = String(a.date).localeCompare(String(b.date));
+      if (dateCompare !== 0) return dateCompare;
+      return String(a.time24 || '').localeCompare(String(b.time24 || ''));
+    });
+    
+    return agendaItems;
+  } catch (error) {
+    Logger.log('Error getting agenda items: ' + error);
     return [];
   }
 }

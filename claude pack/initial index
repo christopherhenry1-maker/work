@@ -1500,6 +1500,99 @@
             }
         }
 
+        /* Agenda Page */
+        .agenda-page {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .agenda-summary {
+            color: var(--color-slate-500);
+            font-size: 0.85rem;
+        }
+
+        .agenda-date-group {
+            border: 1px solid var(--color-slate-200);
+            border-radius: 0.85rem;
+            background: white;
+            padding: 1rem 1.2rem;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+        }
+
+        .agenda-date-label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--color-slate-500);
+        }
+
+        .agenda-date-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--color-slate-900);
+            margin-top: 0.25rem;
+        }
+
+        .agenda-meeting {
+            border-top: 1px solid var(--color-slate-200);
+            padding-top: 0.85rem;
+            margin-top: 0.85rem;
+        }
+
+        .agenda-meeting:first-of-type {
+            border-top: none;
+            padding-top: 0;
+            margin-top: 0.75rem;
+        }
+
+        .agenda-meeting-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+        }
+
+        .agenda-meeting-title {
+            font-size: 0.98rem;
+            font-weight: 700;
+            color: var(--color-slate-900);
+        }
+
+        .agenda-meeting-meta {
+            font-size: 0.78rem;
+            color: var(--color-slate-500);
+            margin-top: 0.25rem;
+        }
+
+        .agenda-topic-list {
+            margin-top: 0.6rem;
+            padding-left: 1.2rem;
+            color: var(--color-slate-700);
+            font-size: 0.88rem;
+        }
+
+        .agenda-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.4rem 0.75rem;
+            border-radius: 999px;
+            background: var(--color-slate-900);
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.18);
+        }
+
+        .agenda-link:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 12px 22px rgba(15, 23, 42, 0.24);
+        }
+
         /* Calendar Grid for Month View */
         .calendar-month-grid-header {
             display: grid;
@@ -2293,6 +2386,12 @@
                     </svg>
                     Meetings
                 </button>
+                <button class="page-tab" onclick="switchPage('agenda')">
+                    <svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                    </svg>
+                    Agendas
+                </button>
                 <button class="page-tab" onclick="switchPage('documents')">
                     <svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
@@ -2553,6 +2652,24 @@
                         </div>
                     </div>
 
+                    <!-- Agenda Page -->
+                    <div id="agendaPage" class="page-content hidden">
+                        <div class="card agenda-page">
+                            <div class="card-header">
+                                <h2 class="card-title">
+                                    <svg class="icon card-title-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                                    </svg>
+                                    Agenda Hub
+                                </h2>
+                                <span class="agenda-summary">Upcoming meeting agendas and topics</span>
+                            </div>
+                            <div id="agendaPageContent">
+                                <div class="loading-message">Loading agendas...</div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Documents Page -->
                     <div id="documentsPage" class="page-content hidden">
                         <div class="documents-page">
@@ -2718,6 +2835,7 @@ let dashboardData = {
     exec1Deliverables: [],
     exec2Deliverables: [],
     meetings: [],
+    agendaItems: [],
     recurringMeetings: [],
     adminLinks: [],
     documentRepoLinks: [],
@@ -2905,6 +3023,14 @@ function onDataLoaded(data) {
         console.log('✅ Schedule rendered');
     } catch (e) {
         console.error('❌ Error rendering schedule:', e);
+    }
+
+    try {
+        console.log('Rendering agendas...');
+        renderAgendaPage();
+        console.log('✅ Agendas rendered');
+    } catch (e) {
+        console.error('❌ Error rendering agendas:', e);
     }
 
     try {
@@ -3434,6 +3560,70 @@ function getMeetingColorClass(meeting) {
 // ============================================================================
 // SIDEBAR LINKS RENDERING
 // ============================================================================
+
+// ============================================================================
+// AGENDA PAGE RENDERING
+// ============================================================================
+
+function renderAgendaPage() {
+    const container = document.getElementById('agendaPageContent');
+    if (!container) return;
+    
+    const agendas = dashboardData.agendaItems || [];
+    if (!agendas.length) {
+        container.innerHTML = '<p style="color: var(--color-slate-500); text-align: center; padding: 2rem;">No upcoming agendas found.</p>';
+        return;
+    }
+    
+    const grouped = {};
+    agendas.forEach(item => {
+        const key = item.date || '';
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push(item);
+    });
+    
+    const sortedDates = Object.keys(grouped).sort();
+    
+    container.innerHTML = sortedDates.map(dateKey => {
+        const items = grouped[dateKey] || [];
+        const dateTitle = dateKey ? formatDate(dateKey) : 'Unknown Date';
+        
+        return `
+            <div class="agenda-date-group">
+                <div class="agenda-date-label">Meeting Date</div>
+                <div class="agenda-date-title">${escapeHtml(dateTitle)}</div>
+                ${items.map(item => {
+                    const timeDisplay = formatTimeStandard(item.time || item.time24 || '');
+                    const agendaLink = item.agendaLink ? `
+                        <a class="agenda-link" href="${escapeHtml(item.agendaLink)}" target="_blank">
+                            <svg class="icon-xs" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                            </svg>
+                            Open Agenda
+                        </a>
+                    ` : '';
+                    
+                    const topics = item.topics && item.topics.length
+                        ? `<ul class="agenda-topic-list">${item.topics.map(t => `<li>${escapeHtml(t)}</li>`).join('')}</ul>`
+                        : '<div style="margin-top: 0.5rem; color: var(--color-slate-500); font-size: 0.85rem;">No topics listed yet.</div>';
+                    
+                    return `
+                        <div class="agenda-meeting">
+                            <div class="agenda-meeting-header">
+                                <div>
+                                    <div class="agenda-meeting-title">${escapeHtml(cleanMeetingTitle(item.title || ''))}</div>
+                                    <div class="agenda-meeting-meta">${timeDisplay ? escapeHtml(timeDisplay) + ' • ' : ''}${escapeHtml(item.dateFormatted || item.date || '')}</div>
+                                </div>
+                                ${agendaLink}
+                            </div>
+                            ${topics}
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        `;
+    }).join('');
+}
 
 // ============================================================================
 // DOCUMENTS PAGE RENDERING
@@ -5049,6 +5239,8 @@ function switchPage(pageName) {
     
     if (pageName === 'meetings') {
         switchMeetingsView(currentMeetingsView);
+    } else if (pageName === 'agenda') {
+        renderAgendaPage();
     } else if (pageName === 'documents') {
         renderDocumentsPage();
     }
