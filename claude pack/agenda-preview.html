@@ -5324,33 +5324,33 @@ function saveMeetingChanges(meetingId) {
         .updateMeeting(data);
 }
 
-	function deleteMeeting(meetingId) {
-	    const meeting = dashboardData.meetings.find(m => m.id === meetingId);
-	    if (!meeting) return;
-	    
-	    uiConfirm({
-	        title: 'Delete meeting',
-	        message: `Delete \"${meeting.title}\"?\n\nThis action cannot be undone.`,
-	        okText: 'Delete',
-	        cancelText: 'Cancel',
-	        onOk: () => {
-	            google.script.run
-	                .withSuccessHandler(function(result) {
-	                    if (result && result.success) {
-	                        alert('Meeting deleted successfully!');
-	                        closeMeetingModal();
-	                        loadDashboardData();
-	                    } else {
-	                        alert((result && result.error) ? result.error : 'Error deleting meeting');
-	                    }
-	                })
-	                .withFailureHandler(function(error) {
-	                    alert(error);
-	                })
-	                .deleteMeeting(meetingId);
-	        }
-	    });
-	}
+function deleteMeeting(meetingId) {
+    const meeting = dashboardData.meetings.find(m => m.id === meetingId);
+    if (!meeting) return;
+    
+    uiConfirm({
+        title: 'Delete meeting',
+        message: `Delete \"${meeting.title}\"?\n\nThis action cannot be undone.`,
+        okText: 'Delete',
+        cancelText: 'Cancel',
+        onOk: () => {
+            google.script.run
+                .withSuccessHandler(function(result) {
+                    if (result && result.success) {
+                        alert('Meeting deleted successfully!');
+                        closeMeetingModal();
+                        loadDashboardData();
+                    } else {
+                        alert((result && result.error) ? result.error : 'Error deleting meeting');
+                    }
+                })
+                .withFailureHandler(function(error) {
+                    alert(error);
+                })
+                .deleteMeeting(meetingId);
+        }
+    });
+}
 
 function addLinkedDocument() {
     const name = prompt('Enter document name:');
@@ -5372,17 +5372,17 @@ function addLinkedDocument() {
     docsList.appendChild(docItem);
 }
 
-	function removeLinkedDoc(index) {
-	    uiConfirm({
-	        title: 'Remove link',
-	        message: 'Remove this linked document?',
-	        okText: 'Remove',
-	        cancelText: 'Cancel',
-	        onOk: () => {
-	            event.target.closest('.linked-doc-item').remove();
-	        }
-	    });
-	}
+function removeLinkedDoc(index) {
+    uiConfirm({
+        title: 'Remove link',
+        message: 'Remove this linked document?',
+        okText: 'Remove',
+        cancelText: 'Cancel',
+        onOk: () => {
+            event.target.closest('.linked-doc-item').remove();
+        }
+    });
+}
 
 
 function createAgenda() {
@@ -6769,68 +6769,68 @@ function closeDeliverableModal(event) {
     }
 }
 
-	function deleteDeliverable() {
-	    const modal = document.getElementById('deliverableModal');
-	    const itemId = modal.dataset.itemId;
-	
-	    uiConfirm({
-	        title: 'Delete deliverable',
-	        message: 'Are you sure you want to delete this deliverable?',
-	        okText: 'Delete',
-	        cancelText: 'Cancel',
-	        onOk: () => {
-	            if (typeof google !== 'undefined' && google.script) {
-	                google.script.run
-	                    .withSuccessHandler((res) => {
-	                        if (res && res.success === false) {
-	                            alert(res.error || 'Error deleting deliverable');
-	                            return;
-	                        }
-	                        alert('Deliverable deleted successfully!');
-	                        closeDeliverableModal();
-	                        loadDashboardData();
-	                    })
-	                    .withFailureHandler((error) => {
-	                        alert(error);
-	                    })
-	                    .deleteDeliverable(itemId);
-	            } else {
-	                alert('Deliverable deleted successfully! (Demo mode)');
-	                closeDeliverableModal();
-	            }
-	        }
-	    });
-	}
+function deleteDeliverable() {
+    const modal = document.getElementById('deliverableModal');
+    const itemId = modal.dataset.itemId;
+    
+    uiConfirm({
+        title: 'Delete deliverable',
+        message: 'Are you sure you want to delete this deliverable?',
+        okText: 'Delete',
+        cancelText: 'Cancel',
+        onOk: () => {
+            if (typeof google !== 'undefined' && google.script) {
+                google.script.run
+                    .withSuccessHandler((res) => {
+                        if (res && res.success === false) {
+                            alert(res.error || 'Error deleting deliverable');
+                            return;
+                        }
+                        alert('Deliverable deleted successfully!');
+                        closeDeliverableModal();
+                        loadDashboardData();
+                    })
+                    .withFailureHandler((error) => {
+                        alert(error);
+                    })
+                    .deleteDeliverable(itemId);
+            } else {
+                alert('Deliverable deleted successfully! (Demo mode)');
+                closeDeliverableModal();
+            }
+        }
+    });
+}
 
-	function showCompletionOptions() {
-	    const modal = document.getElementById('deliverableModal');
-	    const itemId = modal.dataset.itemId;
-	
-	    uiChoose({
-	        title: 'Complete item',
-	        message: 'Where would you like to move this completed item?',
-	        choices: [
-	            { label: 'Document Repository', value: 'Document Repository' },
-	            { label: 'Executive Updates', value: 'Executive Updates' }
-	        ],
-	        onChoose: (destination) => {
-	            google.script.run
-	                .withSuccessHandler((res) => {
-	                    if (res && res.success === false) {
-	                        alert(res.error || 'Error completing item');
-	                        return;
-	                    }
-	                    alert(`Item marked complete and moved to ${destination}`);
-	                    closeDeliverableModal();
-	                    loadDashboardData(); // Refresh data
-	                })
-	                .withFailureHandler((error) => {
-	                    alert(error);
-	                })
-	                .completeItem(itemId, destination);
-	        }
-	    });
-	}
+function showCompletionOptions() {
+    const modal = document.getElementById('deliverableModal');
+    const itemId = modal.dataset.itemId;
+    
+    uiChoose({
+        title: 'Complete item',
+        message: 'Where would you like to move this completed item?',
+        choices: [
+            { label: 'Document Repository', value: 'Document Repository' },
+            { label: 'Executive Updates', value: 'Executive Updates' }
+        ],
+        onChoose: (destination) => {
+            google.script.run
+                .withSuccessHandler((res) => {
+                    if (res && res.success === false) {
+                        alert(res.error || 'Error completing item');
+                        return;
+                    }
+                    alert(`Item marked complete and moved to ${destination}`);
+                    closeDeliverableModal();
+                    loadDashboardData(); // Refresh data
+                })
+                .withFailureHandler((error) => {
+                    alert(error);
+                })
+                .completeItem(itemId, destination);
+        }
+    });
+}
 
 // ============================================================================
 // ADD NEW ITEM FUNCTIONALITY
@@ -6911,8 +6911,8 @@ function closeAddItemModal(event) {
     }
 }
 
-	function submitNewItem(event) {
-	    event.preventDefault();
+function submitNewItem(event) {
+    event.preventDefault();
     
     const itemData = {
         section: document.getElementById('addItemSection').value,
@@ -6923,22 +6923,22 @@ function closeAddItemModal(event) {
         comments: document.getElementById('addItemComments').value
     };
     
-	    // Call backend to add item
-	    google.script.run
-	        .withSuccessHandler((res) => {
-	            if (res && res.success === false) {
-	                alert(res.error || 'Error adding item');
-	                return;
-	            }
-	            alert('Item added successfully');
-	            closeAddItemModal();
-	            loadDashboardData(); // Refresh data
-	        })
-	        .withFailureHandler((error) => {
-	            alert(error);
-	        })
-	        .addNewItem(itemData);
-	}
+    // Call backend to add item
+    google.script.run
+        .withSuccessHandler((res) => {
+            if (res && res.success === false) {
+                alert(res.error || 'Error adding item');
+                return;
+            }
+            alert('Item added successfully');
+            closeAddItemModal();
+            loadDashboardData(); // Refresh data
+        })
+        .withFailureHandler((error) => {
+            alert(error);
+        })
+        .addNewItem(itemData);
+}
 
 // ============================================================================
 // PDF EXPORT FUNCTIONALITY

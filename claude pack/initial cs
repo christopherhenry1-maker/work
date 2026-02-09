@@ -31,6 +31,18 @@ const CONFIG = {
   MEETINGS_TAB_NAME: 'Meetings',
   DELIVERABLES_TAB_NAME: 'Document Repository',
   ARCHIVE_TAB_NAME: 'Meeting Archive', // NEW - for completed meetings
+  
+  // Overview: "On the Radar" (manual input + Gemini weekly summary)
+  RADAR_TAB_NAME: 'On the Radar',
+  RADAR_COLUMNS: {
+    DATE: 0,       // A
+    STATEMENT: 1,  // B
+    OWNER: 2,      // C
+    TAGS: 3,       // D
+    INCLUDE: 4     // E
+  },
+  RADAR_SUMMARY_CELL: 'G2',
+  RADAR_LAST_UPDATED_CELL: 'G3',
 
   // Agenda tabs (Deep Dives + Judge's Table)
   AGENDA_SHEET_ID: '1ZmC-04S_OdhuoJs-XIBiOujj5rtsJTZNOiH26_0LTgk',
@@ -114,6 +126,33 @@ const CONFIG = {
 // ============================================================================
 
 /**
+ * Deliverables sections can grow without updating *_END_ROW. We treat end rows as safety
+ * limits and prefer the next section's START_ROW as the true boundary.
+ */
+function getDeliverablesSectionBounds_(sectionKey) {
+  let startRow = null;
+  let endRow = null;
+  if (sectionKey === 'exec1') {
+    startRow = CONFIG.EXEC1_START_ROW;
+    // End right before the next section's headers.
+    endRow = (CONFIG.EXEC2_START_ROW || CONFIG.EXEC1_END_ROW) - 2;
+  } else if (sectionKey === 'exec2') {
+    startRow = CONFIG.EXEC2_START_ROW;
+    endRow = (CONFIG.ADMIN_START_ROW || CONFIG.EXEC2_END_ROW) - 2;
+  } else {
+    startRow = null;
+    endRow = null;
+  }
+  if (!startRow || !endRow || endRow < startRow) {
+    // Fallback to configured ends.
+    if (sectionKey === 'exec1') return { startRow: CONFIG.EXEC1_START_ROW, endRow: CONFIG.EXEC1_END_ROW };
+    if (sectionKey === 'exec2') return { startRow: CONFIG.EXEC2_START_ROW, endRow: CONFIG.EXEC2_END_ROW };
+    return { startRow: 1, endRow: 1 };
+  }
+  return { startRow: startRow, endRow: endRow };
+}
+
+/**
  * Setup function - Initializes sheets (run this first!)
  */
 function setup() {
@@ -143,6 +182,8 @@ function createCustomMenu() {
     .addItem('🔄 Sync Calendar Now', 'syncCalendarToMeetingsSheet')
     .addItem('📅 Setup Daily Auto-Sync', 'setupDailySyncTrigger')
     .addItem('🗑️ Remove Auto-Sync', 'removeSyncTriggers')
+    .addSeparator()
+    .addItem('🧠 Update On the Radar Summary (Gemini)', 'updateOnTheRadarSummary')
     .addSeparator()
     .addItem('📦 Archive Completed Meetings', 'archiveCompletedMeetings')
     .addSeparator()
@@ -179,6 +220,36 @@ function ensureSheetsExist() {
     sheetsCreated.push(CONFIG.DELIVERABLES_TAB_NAME);
   } else {
     Logger.log('✅ Team Updates sheet already exists');
+  }
+
+  // Create On the Radar sheet if missing
+  let radarSheet = ss.getSheetByName(CONFIG.RADAR_TAB_NAME);
+  if (!radarSheet) {
+    Logger.log('📝 Creating On the Radar sheet...');
+    radarSheet = ss.insertSheet(CONFIG.RADAR_TAB_NAME);
+    initializeOnTheRadarSheet(radarSheet);
+    sheetsCreated.push(CONFIG.RADAR_TAB_NAME);
+  } else {
+    Logger.log('✅ On the Radar sheet already exists');
+  }
+
+  // Ensure agenda tabs exist in the agenda workbook
+  try {
+    const agendaSs = SpreadsheetApp.openById(CONFIG.AGENDA_SHEET_ID);
+    const agendaTabs = getAgendaTabNames_();
+    agendaTabs.forEach(name => {
+      let sh = agendaSs.getSheetByName(name);
+      if (!sh) {
+        sh = agendaSs.insertSheet(name);
+        initializeAgendaTab_(sh);
+        sheetsCreated.push('Agenda: ' + name);
+      } else if (!isAgendaTabByHeader_(sh)) {
+        // If the tab exists but doesn't have headers, don't overwrite data; just leave it.
+        Logger.log('ℹ️ Agenda tab exists but headers not detected: ' + name);
+      }
+    });
+  } catch (e) {
+    Logger.log('❌ Error ensuring agenda tabs: ' + e);
   }
   
   // Show results
@@ -650,6 +721,47 @@ function removeSyncTriggers() {
   }
 }
 
+/**
+ * Initialize On the Radar sheet with headers and summary cells.
+ */
+function initializeOnTheRadarSheet(sheet) {
+  const headers = ['Date', 'High-Level Statement', 'Owner', 'Tags', 'Include'];
+  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+  sheet.getRange(1, 1, 1, headers.length)
+    .setFontWeight('bold')
+    .setBackground('#111827')
+    .setFontColor('#ffffff')
+    .setHorizontalAlignment('center');
+
+  // Add Include checkboxes
+  sheet.getRange(2, 5, 1000, 1).insertCheckboxes();
+
+  // Summary area
+  sheet.getRange('G1').setValue('Weekly Executive Summary (Gemini)')
+    .setFontWeight('bold')
+    .setBackground('#f3f4f6')
+    .setHorizontalAlignment('left');
+  sheet.getRange(CONFIG.RADAR_SUMMARY_CELL).setValue('Click: Executive Dashboard > Update On the Radar Summary (Gemini)')
+    .setWrap(true);
+  sheet.getRange(CONFIG.RADAR_LAST_UPDATED_CELL).setValue('')
+    .setFontColor('#6b7280');
+
+  // Layout
+  sheet.setFrozenRows(1);
+  sheet.setColumnWidth(1, 120); // Date
+  sheet.setColumnWidth(2, 560); // Statement
+  sheet.setColumnWidth(3, 160); // Owner
+  sheet.setColumnWidth(4, 180); // Tags
+  sheet.setColumnWidth(5, 90);  // Include
+  sheet.setColumnWidth(7, 520); // Summary column
+
+  // Wrap statement column and summary
+  sheet.getRange(2, 2, 1000, 1).setWrap(true);
+  sheet.getRange(CONFIG.RADAR_SUMMARY_CELL).setWrap(true);
+
+  Logger.log('✅ On the Radar sheet initialized');
+}
+
 // ============================================================================
 // WEB APP FUNCTIONS
 // ============================================================================
@@ -676,6 +788,81 @@ function include(filename) {
 // DATA RETRIEVAL FUNCTIONS
 // ============================================================================
 
+function uniqStrings_(arr) {
+  const out = [];
+  const seen = {};
+  (arr || []).forEach(v => {
+    const s = String(v || '').trim();
+    if (!s) return;
+    const key = s.toLowerCase();
+    if (seen[key]) return;
+    seen[key] = true;
+    out.push(s);
+  });
+  return out;
+}
+
+function isAgendaTabByHeader_(sheet) {
+  try {
+    if (!sheet) return false;
+    const header = sheet.getRange(1, 1, 1, CONFIG.AGENDA_COLUMNS.LINK + 1).getDisplayValues()[0];
+    if (!header || header.length < (CONFIG.AGENDA_COLUMNS.LINK + 1)) return false;
+    const a = String(header[0] || '').toLowerCase();
+    const b = String(header[1] || '').toLowerCase();
+    const n = String(header[CONFIG.AGENDA_COLUMNS.LINK] || '').toLowerCase();
+    return a.includes('date') && (b.includes('topic') || b.includes('agenda')) && (n.includes('link') || n.includes('deck'));
+  } catch (e) {
+    return false;
+  }
+}
+
+function initializeAgendaTab_(sheet) {
+  const headers = ['Date'];
+  for (let i = 1; i <= CONFIG.AGENDA_COLUMNS.TOPIC_COUNT; i++) {
+    headers.push('Topic ' + i);
+    headers.push('Duration ' + i);
+  }
+  // Pad to Link column
+  while (headers.length < CONFIG.AGENDA_COLUMNS.LINK + 1) headers.push('');
+  headers[CONFIG.AGENDA_COLUMNS.LINK] = 'Link';
+  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+  sheet.getRange(1, 1, 1, headers.length)
+    .setFontWeight('bold')
+    .setBackground('#111827')
+    .setFontColor('#ffffff')
+    .setHorizontalAlignment('center');
+  sheet.setFrozenRows(1);
+  sheet.setColumnWidth(1, 120);
+  // Topic/Duration columns
+  for (let c = 2; c <= (CONFIG.AGENDA_COLUMNS.LINK + 1); c++) {
+    sheet.setColumnWidth(c, (c % 2 === 0) ? 320 : 120);
+  }
+  sheet.getRange(2, 1, 1000, headers.length).setWrap(true);
+}
+
+function getAgendaTabNames_() {
+  const props = PropertiesService.getScriptProperties();
+  let configured = [];
+  try {
+    const raw = props.getProperty('AGENDA_TAB_NAMES');
+    if (raw) configured = JSON.parse(raw);
+  } catch (e) {
+    configured = [];
+  }
+  if (!Array.isArray(configured) || configured.length === 0) {
+    configured = CONFIG.AGENDA_TAB_NAMES || [];
+  }
+  const ss = SpreadsheetApp.openById(CONFIG.AGENDA_SHEET_ID);
+  const discovered = ss.getSheets()
+    .filter(isAgendaTabByHeader_)
+    .map(s => s.getName());
+  const names = uniqStrings_([].concat(configured, discovered));
+  try {
+    props.setProperty('AGENDA_TAB_NAMES', JSON.stringify(names));
+  } catch (e) {}
+  return names;
+}
+
 /**
  * Get all dashboard data in one call
  */
@@ -688,13 +875,19 @@ function getAllDashboardData() {
       exec2Deliverables: [],
       meetings: [],
       agendaItems: [],
+      agendaTypes: [],
       recurringMeetings: [],
       adminLinks: [],
       kpiLinks: [],
       executiveUpdates: [],
       documentRepository: [],
       documentRepoLinks: [],
-      completedItems: []
+      completedItems: [],
+      onTheRadar: {
+        summary: '',
+        lastUpdated: '',
+        items: []
+      }
     };
     
     // Get each section with individual error handling
@@ -725,6 +918,12 @@ function getAllDashboardData() {
       Logger.log('✅ Agendas: ' + result.agendaItems.length + ' items');
     } catch (e) {
       Logger.log('❌ Error getting Agendas: ' + e);
+    }
+
+    try {
+      result.agendaTypes = getAgendaTabNames_();
+    } catch (e) {
+      result.agendaTypes = CONFIG.AGENDA_TAB_NAMES || [];
     }
     
     try {
@@ -775,6 +974,13 @@ function getAllDashboardData() {
     } catch (e) {
       Logger.log('❌ Error getting Completed: ' + e);
     }
+
+    try {
+      result.onTheRadar = getOnTheRadar();
+      Logger.log('✅ On the Radar: ' + (result.onTheRadar.items ? result.onTheRadar.items.length : 0) + ' items');
+    } catch (e) {
+      Logger.log('❌ Error getting On the Radar: ' + e);
+    }
     
     Logger.log('Returning data...');
     
@@ -791,14 +997,220 @@ function getAllDashboardData() {
       exec2Deliverables: [],
       meetings: [],
       agendaItems: [],
+      agendaTypes: [],
       recurringMeetings: [],
       adminLinks: [],
       kpiLinks: [],
       executiveUpdates: [],
       documentRepository: [],
       documentRepoLinks: [],
-      completedItems: []
+      completedItems: [],
+      onTheRadar: { summary: '', lastUpdated: '', items: [] }
     };
+  }
+}
+
+/**
+ * Read On the Radar items + latest summary from the sheet.
+ */
+function getOnTheRadar() {
+  try {
+    const ss = SpreadsheetApp.openById(CONFIG.DELIVERABLES_SHEET_ID);
+    const sheet = ss.getSheetByName(CONFIG.RADAR_TAB_NAME);
+    if (!sheet) return { summary: '', lastUpdated: '', items: [] };
+
+    const summary = String(sheet.getRange(CONFIG.RADAR_SUMMARY_CELL).getDisplayValue() || '').trim();
+    let lastUpdated = String(sheet.getRange(CONFIG.RADAR_LAST_UPDATED_CELL).getDisplayValue() || '').trim();
+    if (/^last updated\\s*:/i.test(lastUpdated)) {
+      lastUpdated = lastUpdated.replace(/^last updated\\s*:/i, '').trim();
+    }
+
+    const lastRow = sheet.getLastRow();
+    const items = [];
+    if (lastRow >= 2) {
+      const values = sheet.getRange(2, 1, lastRow - 1, 5).getValues();
+      values.forEach(row => {
+        const rawStatement = row[CONFIG.RADAR_COLUMNS.STATEMENT];
+        const statement = rawStatement ? String(rawStatement).trim() : '';
+        if (!statement) return;
+
+        const includeVal = row[CONFIG.RADAR_COLUMNS.INCLUDE];
+        if (includeVal === false) return;
+
+        const rawDate = row[CONFIG.RADAR_COLUMNS.DATE];
+        let dateKey = '';
+        if (rawDate instanceof Date && !isNaN(rawDate.getTime())) {
+          dateKey = Utilities.formatDate(rawDate, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+        } else if (rawDate) {
+          const parsed = new Date(rawDate);
+          if (!isNaN(parsed.getTime())) {
+            dateKey = Utilities.formatDate(parsed, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+          } else {
+            dateKey = String(rawDate).trim();
+          }
+        }
+
+        items.push({
+          date: dateKey,
+          statement: statement,
+          owner: String(row[CONFIG.RADAR_COLUMNS.OWNER] || '').trim(),
+          tags: String(row[CONFIG.RADAR_COLUMNS.TAGS] || '').trim()
+        });
+      });
+    }
+
+    return { summary: summary, lastUpdated: lastUpdated, items: items };
+  } catch (error) {
+    Logger.log('Error getting On the Radar: ' + error);
+    return { summary: '', lastUpdated: '', items: [] };
+  }
+}
+
+function getWeekRange_(date) {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  const day = d.getDay(); // 0 Sun ... 6 Sat
+  const diffToMonday = (day + 6) % 7;
+  const start = new Date(d);
+  start.setDate(start.getDate() - diffToMonday);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 6);
+  end.setHours(23, 59, 59, 999);
+  return { start: start, end: end };
+}
+
+function parseDateKeyLocal_(dateKey) {
+  if (!dateKey) return null;
+  if (dateKey instanceof Date && !isNaN(dateKey.getTime())) {
+    const d = new Date(dateKey);
+    d.setHours(12, 0, 0, 0);
+    return d;
+  }
+  const s = String(dateKey).trim();
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+  if (m) {
+    // Use midday local time to avoid DST boundary issues.
+    return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12, 0, 0);
+  }
+  const d = new Date(s);
+  if (isNaN(d.getTime())) return null;
+  d.setHours(12, 0, 0, 0);
+  return d;
+}
+
+function isDateKeyInRange_(dateKey, range) {
+  if (!dateKey || !range) return false;
+  const d = parseDateKeyLocal_(dateKey);
+  if (!d) return false;
+  return d >= range.start && d <= range.end;
+}
+
+function getGeminiApiKey_() {
+  const key = PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY');
+  if (!key) throw new Error('Missing GEMINI_API_KEY in Script Properties (Apps Script > Project Settings > Script Properties)');
+  return key;
+}
+
+function getGeminiModel_() {
+  return PropertiesService.getScriptProperties().getProperty('GEMINI_MODEL') || 'gemini-1.5-flash';
+}
+
+function callGeminiText_(prompt) {
+  const key = getGeminiApiKey_();
+  const model = getGeminiModel_();
+  const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent?key=' + encodeURIComponent(key);
+  const payload = {
+    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    generationConfig: { temperature: 0.3, maxOutputTokens: 420 }
+  };
+  const resp = UrlFetchApp.fetch(url, {
+    method: 'post',
+    contentType: 'application/json',
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true
+  });
+  const code = resp.getResponseCode();
+  const body = resp.getContentText();
+  if (code >= 400) {
+    throw new Error('Gemini API error ' + code + ': ' + body);
+  }
+  const json = JSON.parse(body || '{}');
+  const text =
+    (json.candidates &&
+      json.candidates[0] &&
+      json.candidates[0].content &&
+      json.candidates[0].content.parts &&
+      json.candidates[0].content.parts[0] &&
+      json.candidates[0].content.parts[0].text) || '';
+  return String(text || '').trim();
+}
+
+/**
+ * Generates a weekly executive summary using Gemini, writes it back to the On the Radar sheet,
+ * and returns it to the frontend.
+ */
+function updateOnTheRadarSummary() {
+  try {
+    const ss = SpreadsheetApp.openById(CONFIG.DELIVERABLES_SHEET_ID);
+    let sheet = ss.getSheetByName(CONFIG.RADAR_TAB_NAME);
+    if (!sheet) {
+      sheet = ss.insertSheet(CONFIG.RADAR_TAB_NAME);
+      initializeOnTheRadarSheet(sheet);
+    }
+
+    const radar = getOnTheRadar();
+    const week = getWeekRange_(new Date());
+    const weekLabel = Utilities.formatDate(week.start, Session.getScriptTimeZone(), 'MMM dd') +
+      ' - ' + Utilities.formatDate(week.end, Session.getScriptTimeZone(), 'MMM dd, yyyy');
+
+    const meetings = (getMeetings() || []).filter(m => m && isDateKeyInRange_(m.date, week));
+    const agendas = (getAgendaItems() || []).filter(a => a && isDateKeyInRange_(a.date, week));
+
+    const radarLines = (radar.items || []).slice(0, 30).map(it => {
+      const bits = [];
+      if (it.date) bits.push(it.date);
+      if (it.owner) bits.push('Owner: ' + it.owner);
+      if (it.tags) bits.push('Tags: ' + it.tags);
+      return '- ' + it.statement + (bits.length ? ' (' + bits.join(' | ') + ')' : '');
+    }).join('\n');
+
+    const meetingLines = meetings.slice(0, 40).map(m => {
+      const parts = [];
+      if (m.dateFormatted || m.date) parts.push(m.dateFormatted || m.date);
+      if (m.time) parts.push(m.time);
+      if (m.isHotTopic) parts.push('HOT TOPIC');
+      return '- ' + String(m.title || '').trim() + (parts.length ? ' [' + parts.join(' • ') + ']' : '');
+    }).join('\n');
+
+    const agendaLines = agendas.slice(0, 40).map(a => {
+      const topics = (a.topics || []).slice(0, 6).map(t => (t && t.title) ? t.title : '').filter(Boolean);
+      return '- ' + String(a.meetingType || a.title || 'Agenda') + ' (' + (a.dateFormatted || a.date || '') + '): ' +
+        (topics.length ? topics.join('; ') : 'No topics listed');
+    }).join('\n');
+
+    const prompt =
+      'You are an executive chief-of-staff. Write a compact weekly executive summary for the week of ' + weekLabel + '.\n' +
+      'Requirements:\n' +
+      '- Keep it concise and skimmable.\n' +
+      '- Output format:\n' +
+      '  1) 2-3 sentence summary paragraph\n' +
+      '  2) Bullets under: Key Themes, Decisions/Asks, Risks\n' +
+      '- Use only the provided inputs.\n\n' +
+      'On the Radar statements:\n' + (radarLines || '(none)') + '\n\n' +
+      'Meetings this week:\n' + (meetingLines || '(none)') + '\n\n' +
+      'Submitted agendas this week:\n' + (agendaLines || '(none)') + '\n';
+
+    const summaryText = callGeminiText_(prompt);
+    const lastUpdated = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'MMM dd, yyyy HH:mm');
+
+    sheet.getRange(CONFIG.RADAR_SUMMARY_CELL).setValue(summaryText || '(Gemini returned empty output)').setWrap(true);
+    sheet.getRange(CONFIG.RADAR_LAST_UPDATED_CELL).setValue(lastUpdated).setFontColor('#6b7280');
+
+    return { success: true, summary: summaryText, lastUpdated: lastUpdated };
+  } catch (error) {
+    Logger.log('Error updating On the Radar summary: ' + error);
+    return { success: false, error: error.toString() };
   }
 }
 
@@ -901,8 +1313,9 @@ function archiveCompletedMeetings() {
 function getExec1Deliverables() {
   try {
     const sheet = getSheet(CONFIG.DELIVERABLES_SHEET_ID, CONFIG.DELIVERABLES_TAB_NAME);
-    const startRow = CONFIG.EXEC1_START_ROW;
-    const maxRows = CONFIG.EXEC1_END_ROW - startRow + 1;
+    const bounds = getDeliverablesSectionBounds_('exec1');
+    const startRow = bounds.startRow;
+    const maxRows = bounds.endRow - startRow + 1;
     
     const range = sheet.getRange(startRow, 1, maxRows, 7);
     const values = range.getValues();
@@ -960,8 +1373,9 @@ function getExec1Deliverables() {
 function getExec2Deliverables() {
   try {
     const sheet = getSheet(CONFIG.DELIVERABLES_SHEET_ID, CONFIG.DELIVERABLES_TAB_NAME);
-    const startRow = CONFIG.EXEC2_START_ROW;
-    const maxRows = CONFIG.EXEC2_END_ROW - startRow + 1;
+    const bounds = getDeliverablesSectionBounds_('exec2');
+    const startRow = bounds.startRow;
+    const maxRows = bounds.endRow - startRow + 1;
     
     const range = sheet.getRange(startRow, 1, maxRows, 7);
     const values = range.getValues();
@@ -1114,9 +1528,6 @@ function getMeetings() {
       const row = values[i];
       if (!row[CONFIG.MEETING_COLUMNS.MEETING_NAME]) continue;
       
-      // ONLY show approved meetings
-      if (row[CONFIG.MEETING_COLUMNS.APPROVED] !== true) continue;
-      
       const meetingDate = new Date(row[CONFIG.MEETING_COLUMNS.DATE]);
       if (!(meetingDate instanceof Date) || isNaN(meetingDate.getTime())) continue;
       
@@ -1152,16 +1563,19 @@ function getMeetings() {
           time: normalizedTime.time12,
           time24: normalizedTime.time24,
           duration: String(row[CONFIG.MEETING_COLUMNS.DURATION] || ''),
+          frequency: String(row[CONFIG.MEETING_COLUMNS.FREQUENCY] || ''),
           category: row[CONFIG.MEETING_COLUMNS.CATEGORY] || 'meeting',
           description: row[CONFIG.MEETING_COLUMNS.DESCRIPTION] || '',
           attendees: row[CONFIG.MEETING_COLUMNS.ATTENDEES] || '',
+          approved: row[CONFIG.MEETING_COLUMNS.APPROVED] === true,
           isHotTopic: isHotTopic,
           hotTopicLevel: hotTopicLevel,
           colorId: colorMeta,
           prepRequired: row[CONFIG.MEETING_COLUMNS.PREP_REQUIRED] === true,
           deliverableLink: deliverableLink || '',
           notes: row[CONFIG.MEETING_COLUMNS.NOTES] || '',
-          dayOfWeek: meetingDate.getDay()
+          dayOfWeek: meetingDate.getDay(),
+          _rowIndex: i + 1
         });
       }
     }
@@ -1294,7 +1708,7 @@ function getAgendaItemsFromAgendaTabs() {
   try {
     const agendaItems = [];
     let foundTab = false;
-    const tabNames = CONFIG.AGENDA_TAB_NAMES || [];
+    const tabNames = getAgendaTabNames_();
     if (!tabNames.length) return { items: [], foundTab: false };
     
     const today = new Date();
@@ -1440,8 +1854,18 @@ function addAgendaEntry(data) {
     if (!meetingType) return { success: false, error: 'Missing agenda type' };
     if (!dateValue) return { success: false, error: 'Missing meeting date' };
     
-    const sheet = getSheet(CONFIG.AGENDA_SHEET_ID, meetingType);
-    if (!sheet) return { success: false, error: 'Agenda tab not found: ' + meetingType };
+    const ss = SpreadsheetApp.openById(CONFIG.AGENDA_SHEET_ID);
+    let sheet = ss.getSheetByName(meetingType);
+    if (!sheet) {
+      // Allow the frontend to add new agenda types; create the tab automatically.
+      sheet = ss.insertSheet(meetingType);
+      initializeAgendaTab_(sheet);
+      try {
+        const props = PropertiesService.getScriptProperties();
+        const next = uniqStrings_([].concat(getAgendaTabNames_(), [meetingType]));
+        props.setProperty('AGENDA_TAB_NAMES', JSON.stringify(next));
+      } catch (e) {}
+    }
     
     const row = new Array(CONFIG.AGENDA_COLUMNS.LINK + 1).fill('');
     const dateObj = new Date(dateValue + 'T00:00:00');
@@ -1826,35 +2250,78 @@ function attachAgendaToMeeting(data) {
  */
 function updateMeeting(meetingId, updates) {
   try {
+    // Backward-compatible calling conventions:
+    // - updateMeeting(meetingId, updates)
+    // - updateMeeting({ id, ...updates })
+    if (meetingId && typeof meetingId === 'object' && !updates) {
+      updates = meetingId;
+      meetingId = updates && (updates.id || updates.meetingId);
+    }
     if (!meetingId) return { success: false, error: 'Missing meetingId' };
+    if (!updates || typeof updates !== 'object') updates = {};
     
     const sheet = getSheet(CONFIG.MEETINGS_SHEET_ID, CONFIG.MEETINGS_TAB_NAME);
     if (!sheet) return { success: false, error: 'Meetings sheet not found' };
     
     const values = sheet.getDataRange().getValues();
     let targetRow = -1;
-    for (let i = 1; i < values.length; i++) {
-      if (String(values[i][CONFIG.MEETING_COLUMNS.EVENT_ID] || '') === String(meetingId)) {
-        targetRow = i + 1;
-        break;
+    
+    // Allow editing rows without an EVENT_ID by using the synthetic id "meeting-<i>"
+    // where <i> matches the dataRange row index used in getMeetings().
+    const m = /^meeting-(\d+)$/.exec(String(meetingId));
+    if (m) {
+      const idx = parseInt(m[1], 10);
+      if (!isNaN(idx) && idx >= 1 && idx < values.length) {
+        targetRow = idx + 1; // +1 because sheet rows are 1-based and include header row.
+      }
+    }
+    
+    if (targetRow === -1) {
+      for (let i = 1; i < values.length; i++) {
+        if (String(values[i][CONFIG.MEETING_COLUMNS.EVENT_ID] || '') === String(meetingId)) {
+          targetRow = i + 1;
+          break;
+        }
       }
     }
     
     if (targetRow === -1) return { success: false, error: 'Meeting not found' };
-    
-    const baseNotes = (updates.notes || '').split('Agenda Topics:')[0].trim();
-    const agendaTopics = (updates.agendaTopics || '').trim();
-    const agendaBlock = agendaTopics ? ('Agenda Topics:\n' + agendaTopics) : '';
-    const finalNotes = baseNotes && agendaBlock ? (baseNotes + '\n\n' + agendaBlock) : (baseNotes || agendaBlock);
-    
+
+    const marker = 'Agenda Topics:';
     const notesCell = sheet.getRange(targetRow, CONFIG.MEETING_COLUMNS.NOTES + 1);
-    notesCell.setValue(finalNotes);
-    
-    const linkCell = sheet.getRange(targetRow, CONFIG.MEETING_COLUMNS.DELIVERABLE_LINK + 1);
-    if (updates.deliverableLink && String(updates.deliverableLink).trim()) {
-      linkCell.setFormula('=HYPERLINK(\"' + updates.deliverableLink + '\", \"Agenda\")');
+    const existingNotesRaw = notesCell.getValue() ? String(notesCell.getValue()) : '';
+    const existingBase = existingNotesRaw.split(marker)[0].trim();
+    const existingAgenda = existingNotesRaw.includes(marker) ? existingNotesRaw.split(marker)[1].trim() : '';
+
+    // Notes: if not provided, keep existing base notes.
+    const incomingNotesRaw = Object.prototype.hasOwnProperty.call(updates, 'notes') ? String(updates.notes || '') : null;
+    const incomingBase = incomingNotesRaw === null ? existingBase : incomingNotesRaw.split(marker)[0].trim();
+
+    // Agenda topics: prefer explicit field; else, if notes includes marker, extract; else keep existing.
+    let agendaTopics = null;
+    if (Object.prototype.hasOwnProperty.call(updates, 'agendaTopics')) {
+      agendaTopics = String(updates.agendaTopics || '').trim();
+    } else if (incomingNotesRaw !== null && incomingNotesRaw.includes(marker)) {
+      agendaTopics = incomingNotesRaw.split(marker)[1].trim();
     } else {
-      linkCell.setValue('');
+      agendaTopics = existingAgenda;
+    }
+
+    // Only write notes if caller is changing notes/agendaTopics.
+    if (incomingNotesRaw !== null || Object.prototype.hasOwnProperty.call(updates, 'agendaTopics')) {
+      const agendaBlock = agendaTopics ? (marker + '\n' + agendaTopics) : '';
+      const finalNotes = incomingBase && agendaBlock ? (incomingBase + '\n\n' + agendaBlock) : (incomingBase || agendaBlock);
+      notesCell.setValue(finalNotes);
+    }
+
+    // Deliverable link: only mutate if explicitly provided.
+    if (Object.prototype.hasOwnProperty.call(updates, 'deliverableLink')) {
+      const linkCell = sheet.getRange(targetRow, CONFIG.MEETING_COLUMNS.DELIVERABLE_LINK + 1);
+      if (updates.deliverableLink && String(updates.deliverableLink).trim()) {
+        linkCell.setFormula('=HYPERLINK(\"' + updates.deliverableLink + '\", \"Agenda\")');
+      } else {
+        linkCell.setValue('');
+      }
     }
     
     return { success: true };
@@ -2043,26 +2510,26 @@ function addNewItem(itemData) {
     const sheet = getSheet(CONFIG.DELIVERABLES_SHEET_ID, CONFIG.DELIVERABLES_TAB_NAME);
     
     // Determine target section
-    let targetStartRow;
-    let targetEndRow;
-    if (itemData.section === 'exec1') {
-      targetStartRow = CONFIG.EXEC1_START_ROW;
-      targetEndRow = CONFIG.EXEC1_END_ROW;
-    } else if (itemData.section === 'exec2') {
-      targetStartRow = CONFIG.EXEC2_START_ROW;
-      targetEndRow = CONFIG.EXEC2_END_ROW;
-    } else {
-      throw new Error('Unknown section: ' + itemData.section);
+    const sectionKey = String(itemData.section || '').trim();
+    if (sectionKey !== 'exec1' && sectionKey !== 'exec2') {
+      return { success: false, error: 'Unknown section: ' + sectionKey };
     }
-    
-    // Find first empty row in section
-    let targetRow = targetStartRow;
-    while (targetRow <= targetEndRow && sheet.getRange(targetRow, 1).getValue() !== '') {
-      targetRow++;
+    const bounds = getDeliverablesSectionBounds_(sectionKey);
+    const targetStartRow = bounds.startRow;
+    const targetEndRow = bounds.endRow;
+
+    // Find first empty row in section (treat whitespace as empty)
+    const colA = sheet.getRange(targetStartRow, 1, targetEndRow - targetStartRow + 1, 1).getDisplayValues();
+    let targetRow = null;
+    for (let i = 0; i < colA.length; i++) {
+      const v = colA[i][0] ? String(colA[i][0]).trim() : '';
+      if (!v) {
+        targetRow = targetStartRow + i;
+        break;
+      }
     }
-    
-    if (targetRow > targetEndRow) {
-      throw new Error('No empty rows available in section: ' + itemData.section);
+    if (!targetRow) {
+      return { success: false, error: 'No empty rows available in section: ' + sectionKey };
     }
     
     // Prepare row data (adjust columns based on your sheet structure)
@@ -2075,14 +2542,18 @@ function addNewItem(itemData) {
     
     // Insert data into columns A-D
     sheet.getRange(targetRow, 1, 1, rowData.length).setValues([rowData]);
+    // Set hyperlink in Column D if provided
+    if (itemData.link && String(itemData.link).trim()) {
+      sheet.getRange(targetRow, 4).setFormula('=HYPERLINK(\"' + String(itemData.link).trim() + '\", \"Link to File\")');
+    }
     // Comments go in column G
     sheet.getRange(targetRow, 7).setValue(itemData.comments || '');
     
-    return { success: true, message: 'Item added successfully' };
+    return { success: true, message: 'Item added successfully', row: targetRow };
     
   } catch (error) {
     Logger.log('Error adding item: ' + error);
-    throw error;
+    return { success: false, error: error.toString() };
   }
 }
 // ============================================================================
@@ -2122,8 +2593,9 @@ function updateDeliverable(data) {
       return { success: false, error: 'Invalid item index' };
     }
     
-    const startRow = execType === 'exec1' ? CONFIG.EXEC1_START_ROW : CONFIG.EXEC2_START_ROW;
-    const endRow = execType === 'exec1' ? CONFIG.EXEC1_END_ROW : CONFIG.EXEC2_END_ROW;
+    const bounds = getDeliverablesSectionBounds_(execType);
+    const startRow = bounds.startRow;
+    const endRow = bounds.endRow;
     const actualRow = startRow + itemIndex;
     
     if (actualRow > endRow) {
@@ -2167,20 +2639,16 @@ function deleteDeliverable(data) {
       return { success: false, error: 'Sheet not found: ' + CONFIG.DELIVERABLES_TAB_NAME };
     }
     
-    // Determine the row range based on execType
-    let startRow, endRow;
-    if (data.execType === 'exec1') {
-      startRow = CONFIG.EXEC1_START_ROW;
-      endRow = CONFIG.EXEC1_END_ROW;
-    } else if (data.execType === 'exec2') {
-      startRow = CONFIG.EXEC2_START_ROW;
-      endRow = CONFIG.EXEC2_END_ROW;
-    } else {
-      return { success: false, error: 'Invalid execType: ' + data.execType };
+    const execType = String(data.execType || '').trim();
+    if (execType !== 'exec1' && execType !== 'exec2') {
+      return { success: false, error: 'Invalid execType: ' + execType };
     }
+    const bounds = getDeliverablesSectionBounds_(execType);
+    const startRow = bounds.startRow;
+    const endRow = bounds.endRow;
     
     // Calculate actual row number
-    const actualRow = startRow + data.itemIndex;
+    const actualRow = startRow + Number(data.itemIndex || 0);
     
     if (actualRow > endRow) {
       return { success: false, error: 'Item index out of range' };
@@ -2213,32 +2681,25 @@ function addDeliverable(data) {
       return { success: false, error: 'Sheet not found: ' + CONFIG.DELIVERABLES_TAB_NAME };
     }
     
-    // Determine the row range based on execType
-    let startRow, endRow;
-    if (data.execType === 'exec1') {
-      startRow = CONFIG.EXEC1_START_ROW;
-      endRow = CONFIG.EXEC1_END_ROW;
-    } else if (data.execType === 'exec2') {
-      startRow = CONFIG.EXEC2_START_ROW;
-      endRow = CONFIG.EXEC2_END_ROW;
-    } else {
-      return { success: false, error: 'Invalid execType: ' + data.execType };
+    // Determine the row range based on execType (dynamic section bounds)
+    const execType = String(data.execType || '').trim();
+    if (execType !== 'exec1' && execType !== 'exec2') {
+      return { success: false, error: 'Invalid execType: ' + execType };
     }
+    const bounds = getDeliverablesSectionBounds_(execType);
+    const startRow = bounds.startRow;
+    const endRow = bounds.endRow;
     
-    // Find the first empty row in the range
-    const range = sheet.getRange(startRow, 1, endRow - startRow + 1, 1);
-    const values = range.getValues();
+    // Find the first empty row in the range (treat whitespace as empty)
+    const values = sheet.getRange(startRow, 1, endRow - startRow + 1, 1).getDisplayValues();
     let emptyRow = null;
-    
     for (let i = 0; i < values.length; i++) {
-      if (!values[i][0] || values[i][0].toString().trim() === '') {
-        emptyRow = startRow + i;
-        break;
-      }
+      const v = values[i][0] ? String(values[i][0]).trim() : '';
+      if (!v) { emptyRow = startRow + i; break; }
     }
     
     if (!emptyRow) {
-      return { success: false, error: 'No empty rows available in ' + data.execType + ' section' };
+      return { success: false, error: 'No empty rows available in ' + execType + ' section' };
     }
     
     // Add the new item
