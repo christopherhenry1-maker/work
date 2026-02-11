@@ -424,6 +424,11 @@
             padding: 0 1rem 1rem;
         }
 
+        .sidebar-upcoming-content.open {
+            max-height: 700px;
+            overflow-y: auto;
+        }
+
         /* Sidebar Links */
         .sidebar-link {
             display: flex;
@@ -441,6 +446,108 @@
         .sidebar-link:hover {
             background-color: var(--color-slate-50);
             color: var(--color-slate-900);
+        }
+
+        .sidebar-upcoming-list {
+            display: grid;
+            gap: 0.65rem;
+        }
+
+        .sidebar-upcoming-type {
+            border: 1px solid var(--color-slate-200);
+            border-radius: 0.65rem;
+            background: white;
+            overflow: hidden;
+        }
+
+        .sidebar-upcoming-type-head {
+            padding: 0.5rem 0.6rem;
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 0.5rem;
+            background: var(--color-slate-50);
+            border-bottom: 1px solid var(--color-slate-200);
+        }
+
+        .sidebar-upcoming-type-title {
+            font-size: 0.7rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            color: var(--color-slate-700);
+            text-transform: uppercase;
+        }
+
+        .sidebar-upcoming-type-count {
+            font-size: 0.65rem;
+            color: var(--color-slate-500);
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .sidebar-upcoming-next {
+            padding: 0.55rem 0.6rem;
+            border-bottom: 1px solid var(--color-slate-100);
+        }
+
+        .sidebar-upcoming-next-date {
+            font-size: 0.68rem;
+            color: var(--color-slate-500);
+        }
+
+        .sidebar-upcoming-next-title {
+            margin-top: 0.2rem;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--color-slate-800);
+            line-height: 1.3;
+        }
+
+        .sidebar-upcoming-topics {
+            margin-top: 0.4rem;
+            display: grid;
+            gap: 0.3rem;
+        }
+
+        .sidebar-upcoming-topic {
+            font-size: 0.7rem;
+            color: var(--color-slate-600);
+            background: var(--color-slate-50);
+            border: 1px solid var(--color-slate-200);
+            border-radius: 0.45rem;
+            padding: 0.25rem 0.35rem;
+        }
+
+        .sidebar-upcoming-more {
+            padding: 0.5rem 0.6rem 0.55rem;
+        }
+
+        .sidebar-upcoming-more summary {
+            list-style: none;
+            cursor: pointer;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--color-slate-600);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .sidebar-upcoming-more summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .sidebar-upcoming-more-list {
+            margin-top: 0.45rem;
+            display: grid;
+            gap: 0.45rem;
+        }
+
+        .sidebar-upcoming-more-item {
+            border: 1px solid var(--color-slate-200);
+            border-radius: 0.5rem;
+            padding: 0.4rem 0.45rem;
+            background: var(--color-slate-50);
         }
 
         /* Completed Items */
@@ -1766,6 +1873,25 @@
             background: var(--color-slate-50);
         }
 
+        .docs-accordion-header {
+            cursor: pointer;
+            list-style: none;
+        }
+
+        .docs-accordion-header::-webkit-details-marker {
+            display: none;
+        }
+
+        .docs-accordion-chevron {
+            color: var(--color-slate-400);
+            transition: transform 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .docs-accordion[open] .docs-accordion-chevron {
+            transform: rotate(180deg);
+        }
+
         .docs-card-title {
             display: flex;
             align-items: center;
@@ -2007,6 +2133,137 @@
             border-radius: 999px;
             background: var(--color-slate-200);
             white-space: nowrap;
+        }
+
+        .agenda-columns {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 1rem;
+        }
+
+        .agenda-column-card {
+            border: 1px solid var(--color-slate-200);
+            border-radius: 0.85rem;
+            background: white;
+            padding: 1rem 1.2rem;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
+        }
+
+        .agenda-column-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+
+        .agenda-column-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--color-slate-900);
+        }
+
+        .agenda-column-meta {
+            font-size: 0.75rem;
+            color: var(--color-slate-500);
+        }
+
+        .agenda-upcoming-label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--color-slate-500);
+        }
+
+        .agenda-meeting-compact .agenda-meeting-title {
+            font-size: 0.9rem;
+        }
+
+        .agenda-meeting-compact .agenda-meeting-meta {
+            font-size: 0.72rem;
+        }
+
+        .agenda-future-accordion {
+            border-top: 1px solid var(--color-slate-200);
+            padding-top: 0.75rem;
+        }
+
+        .agenda-future-summary {
+            cursor: pointer;
+            list-style: none;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-weight: 600;
+            color: var(--color-slate-700);
+            font-size: 0.85rem;
+        }
+
+        .agenda-future-summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .agenda-future-list {
+            margin-top: 0.75rem;
+            display: grid;
+            gap: 0.75rem;
+        }
+
+        .agenda-history-list {
+            margin-top: 0.75rem;
+            display: grid;
+            gap: 0.6rem;
+        }
+
+        .agenda-history-item {
+            border: 1px solid var(--color-slate-200);
+            border-radius: 0.6rem;
+            background: var(--color-slate-50);
+            overflow: hidden;
+        }
+
+        .agenda-history-item summary {
+            cursor: pointer;
+            list-style: none;
+            padding: 0.5rem 0.65rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--color-slate-700);
+        }
+
+        .agenda-history-item summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .agenda-history-content {
+            padding: 0 0.65rem 0.65rem;
+            border-top: 1px solid var(--color-slate-200);
+            background: white;
+        }
+
+        .agenda-empty {
+            font-size: 0.85rem;
+            color: var(--color-slate-500);
+            padding: 0.75rem 0;
+        }
+
+        @media (max-width: 1100px) {
+            .agenda-columns {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 720px) {
+            .agenda-columns {
+                grid-template-columns: 1fr;
+            }
         }
 
         .agenda-link {
@@ -2834,6 +3091,12 @@
                     </svg>
                     Documents
                 </button>
+                <button class="page-tab" onclick="switchPage('hc')">
+                    <svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    HC
+                </button>
             </div>
         </div>
         <div class="user-actions">
@@ -2984,7 +3247,7 @@
 
             <!-- Upcoming Agendas -->
             <div class="sidebar-accordion">
-                <button class="accordion-header" onclick="toggleAccordion(this)">
+                <button class="accordion-header open" onclick="toggleAccordion(this)">
                     <span class="accordion-title">
                         <svg class="icon-xs accordion-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
@@ -2995,23 +3258,8 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                     </svg>
                 </button>
-                <div class="accordion-content">
-                    <div class="agenda-builder">
-                        <label class="input-label">Select Recurring Meeting</label>
-                        <select class="input-field" id="recurringMeetingSelect">
-                            <option value="">-- Select Meeting --</option>
-                        </select>
-                        <div class="mt-3 hidden" id="agendaDateSection">
-                            <label class="input-label">Select Date</label>
-                            <input type="date" class="input-field" id="agendaDate">
-                            <button class="btn-primary mt-2" onclick="handleCreateAgenda()">
-                                <svg class="icon-xs" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                                </svg>
-                                Create Agenda
-                            </button>
-                        </div>
-                    </div>
+                <div class="accordion-content sidebar-upcoming-content open" id="sidebarUpcomingAgendas">
+                    <div class="loading-spinner">Loading...</div>
                 </div>
             </div>
 
@@ -3030,12 +3278,11 @@
         <main class="main-content">
             <div class="content-scroll">
                 <div class="content-container" id="mainContent">
-	                    <!-- Overview Page -->
-	                    <div id="overviewPage" class="page-content">
-	                        <div id="onTheRadarSection" class="mt-2"></div>
-	                        <div class="section-header">
-	                            <h2 class="section-title overview-title">DASHBOARD CONTEXT</h2>
-	                        </div>
+                    <!-- Overview Page -->
+                    <div id="overviewPage" class="page-content">
+                        <div class="section-header">
+                            <h2 class="section-title overview-title">DASHBOARD CONTEXT</h2>
+                        </div>
 	                        
 	                        <!-- Deliverables Section -->
                         <div id="deliverablesSection">
@@ -3158,43 +3405,52 @@
                             </div>
 
                             <div class="docs-grid">
-                                <section class="docs-card">
-                                    <div class="docs-card-header">
+                                <details class="docs-card docs-accordion" open>
+                                    <summary class="docs-card-header docs-accordion-header">
                                         <div class="docs-card-title">
                                             <svg class="icon-xs" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                             </svg>
                                             Admin & Settings
                                         </div>
-                                    </div>
+                                        <svg class="icon-xs docs-accordion-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                        </svg>
+                                    </summary>
                                     <div class="docs-card-body" id="documentsAdmin">
                                         <div class="loading-message">Loading...</div>
                                     </div>
-                                </section>
+                                </details>
 
-                                <section class="docs-card">
-                                    <div class="docs-card-header">
+                                <details class="docs-card docs-accordion">
+                                    <summary class="docs-card-header docs-accordion-header">
                                         <div class="docs-card-title">
                                             <svg class="icon-xs" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                                             </svg>
                                             KPIs & Performance
                                         </div>
-                                    </div>
+                                        <svg class="icon-xs docs-accordion-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                        </svg>
+                                    </summary>
                                     <div class="docs-card-body" id="documentsKPIs">
                                         <div class="loading-message">Loading...</div>
                                     </div>
-                                </section>
+                                </details>
 
-                                <section class="docs-card">
-                                    <div class="docs-card-header">
+                                <details class="docs-card docs-accordion">
+                                    <summary class="docs-card-header docs-accordion-header">
                                         <div class="docs-card-title">
                                             <svg class="icon-xs" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
                                             </svg>
                                             Executive Updates
                                         </div>
-                                    </div>
+                                        <svg class="icon-xs docs-accordion-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                        </svg>
+                                    </summary>
                                     <div class="docs-card-body">
                                         <div class="table-wrapper">
                                             <table class="deliverables-table">
@@ -3212,17 +3468,20 @@
                                             </table>
                                         </div>
                                     </div>
-                                </section>
+                                </details>
 
-                                <section class="docs-card">
-                                    <div class="docs-card-header">
+                                <details class="docs-card docs-accordion">
+                                    <summary class="docs-card-header docs-accordion-header">
                                         <div class="docs-card-title">
                                             <svg class="icon-xs" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
                                             </svg>
                                             Document Repository
                                         </div>
-                                    </div>
+                                        <svg class="icon-xs docs-accordion-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                        </svg>
+                                    </summary>
                                     <div class="docs-card-body">
                                         <div class="table-wrapper">
                                             <table class="deliverables-table">
@@ -3240,7 +3499,30 @@
                                             </table>
                                         </div>
                                     </div>
-                                </section>
+                                </details>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- HC Page -->
+                    <div id="hcPage" class="page-content hidden">
+                        <div class="card">
+                            <div class="card-header">
+                                <h2 class="card-title">
+                                    <svg class="icon card-title-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                    </svg>
+                                    Headcount Report
+                                </h2>
+                                <span style="font-size: 0.75rem; color: var(--color-slate-500);">February HC</span>
+                            </div>
+                            <div style="height: 720px; border: 1px solid var(--color-slate-200); border-radius: 0.75rem; overflow: hidden; background: white;">
+                                <iframe src="february HC.html" title="February Headcount Report" style="width: 100%; height: 100%; border: none;"></iframe>
+                            </div>
+                            <div style="margin-top: 1rem; display: flex; justify-content: flex-end;">
+                                <a href="february HC.html" target="_blank" class="btn-secondary" rel="noopener">
+                                    Open report in new tab
+                                </a>
                             </div>
                         </div>
                     </div>
@@ -3413,6 +3695,14 @@ document.addEventListener('DOMContentLoaded', function() {
             kpiLinks: [
                 { name: "Sales Dashboard", url: "#" }
             ],
+            documentRepoLinks: [
+                {
+                    name: "February HC Report",
+                    owner: "People Ops",
+                    url: "february HC.html",
+                    comment: "Monthly headcount overview"
+                }
+            ],
             executiveUpdates: [
                 { name: "Q4 Summary", url: "#", dateAdded: "Jan 15, 2026" }
             ],
@@ -3548,15 +3838,9 @@ function refreshDashboard() {
 	        console.error('❌ Error rendering alerts:', e);
 	    }
 	
-	    try {
-	        renderOnTheRadar();
-	    } catch (e) {
-	        console.error('❌ Error rendering On the Radar:', e);
-	    }
-
-	    try {
-	        console.log('Rendering deliverables...');
-	        renderDeliverables();
+    try {
+        console.log('Rendering deliverables...');
+        renderDeliverables();
 	        console.log('✅ Deliverables rendered');
         
         // Attach click handlers to deliverable rows
@@ -3756,14 +4040,84 @@ function showError(message) {
 	    return isNaN(d.getTime()) ? null : d;
 	}
 	
-	function isDateInRange(isoDate, range) {
-	    if (!isoDate || !range) return false;
-	    const d = parseDateKeyLocal(isoDate);
-	    if (!d) return false;
-	    return d >= range.start && d <= range.end;
-	}
-	
-	function renderOnTheRadar() {
+function isDateInRange(isoDate, range) {
+    if (!isoDate || !range) return false;
+    const d = parseDateKeyLocal(isoDate);
+    if (!d) return false;
+    return d >= range.start && d <= range.end;
+}
+
+function toDateKeyLocal(dateObj) {
+    if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) return '';
+    const y = dateObj.getFullYear();
+    const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const d = String(dateObj.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
+
+function compareAgendaItemsByDate(a, b) {
+    const dateA = parseDateKeyLocal(a && a.date ? a.date : '');
+    const dateB = parseDateKeyLocal(b && b.date ? b.date : '');
+    if (dateA && dateB) {
+        const diff = dateA.getTime() - dateB.getTime();
+        if (diff !== 0) return diff;
+    } else if (dateA && !dateB) {
+        return -1;
+    } else if (!dateA && dateB) {
+        return 1;
+    }
+    return timeToMinutes(a && (a.time24 || a.time) ? (a.time24 || a.time) : '')
+        - timeToMinutes(b && (b.time24 || b.time) ? (b.time24 || b.time) : '');
+}
+
+function splitAgendaItemsByUpcoming(items) {
+    const sorted = (items || []).slice().sort(compareAgendaItemsByDate);
+    if (!sorted.length) return { upcoming: null, others: [] };
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    let upcomingIndex = sorted.findIndex(item => {
+        const date = parseDateKeyLocal(item && item.date ? item.date : '');
+        return date && date.getTime() >= today.getTime();
+    });
+    if (upcomingIndex < 0) upcomingIndex = 0;
+    const upcoming = sorted[upcomingIndex];
+    const others = sorted.filter((_, idx) => idx !== upcomingIndex);
+    return { upcoming, others };
+}
+
+function isMeetingHotTopic(meeting) {
+    if (!meeting) return false;
+    if (meeting.isHotTopic) return true;
+    const level = String(meeting.hotTopicLevel || '').trim().toLowerCase();
+    return ['urgent', 'must-attend', 'hot'].includes(level);
+}
+
+function isTruthyApprovedValue(value) {
+    if (value === true || value === 1) return true;
+    const normalized = String(value || '').trim().toLowerCase();
+    return ['approved', 'approve', 'true', 'yes', 'y', '1', 'confirmed'].includes(normalized);
+}
+
+function isMeetingApproved(meeting) {
+    if (!meeting) return false;
+    const fields = [
+        meeting.approved,
+        meeting.isApproved,
+        meeting.approvalStatus,
+        meeting.status,
+        meeting.meetingStatus,
+        meeting.approval
+    ];
+    if (fields.some(isTruthyApprovedValue)) return true;
+    const combined = `${meeting.title || ''} ${meeting.category || ''} ${meeting.notes || ''}`.toLowerCase();
+    return /\bapproved\b/.test(combined);
+}
+
+function shouldIncludeInExecTwoWeekView(meeting) {
+    return isMeetingHotTopic(meeting) || isMeetingApproved(meeting);
+}
+
+function renderOnTheRadar() {
 	    const container = document.getElementById('onTheRadarSection');
 	    if (!container) return;
 	
@@ -4099,8 +4453,11 @@ function hasTimeConflict(meeting1, meeting2) {
 
 function renderSchedule() {
     const container = document.getElementById('scheduleSection');
-    
-    if (!dashboardData.meetings || dashboardData.meetings.length === 0) {
+
+    const allMeetings = dashboardData.meetings || [];
+    const meetingsForExecView = allMeetings.filter(m => m && m.date && shouldIncludeInExecTwoWeekView(m));
+
+    if (meetingsForExecView.length === 0) {
         container.innerHTML = `
             <div class="card">
                 <div class="card-header">
@@ -4111,15 +4468,15 @@ function renderSchedule() {
                         Executive Schedule - 2 Week View
                     </h2>
                 </div>
-                <p style="color: var(--color-slate-500); padding: 2rem; text-align: center;">No upcoming meetings found.</p>
+                <p style="color: var(--color-slate-500); padding: 2rem; text-align: center;">No hot-topic or approved meetings in the current 2-week window.</p>
             </div>
         `;
         return;
     }
-    
+
     // Group meetings by date
     const meetingsByDate = {};
-    dashboardData.meetings.forEach(meeting => {
+    meetingsForExecView.forEach(meeting => {
         if (!meetingsByDate[meeting.date]) {
             meetingsByDate[meeting.date] = [];
         }
@@ -4137,6 +4494,7 @@ function renderSchedule() {
                     </svg>
                     Executive Schedule - 2 Week View
                 </h2>
+                <span style="font-size: 0.75rem; color: var(--color-slate-500);">Hot topics + approved meetings only</span>
             </div>
             <div class="schedule-wrapper">
                 ${renderScheduleGrid(firstWeekDates, meetingsByDate, 'Week 1', true)}
@@ -4149,24 +4507,28 @@ function renderSchedule() {
 }
 
 function getTwoWeekScheduleDates() {
-    // Generate 2 weeks of workdays (Mon-Fri) starting from February 2, 2026 (hardcoded)
-    const startDate = new Date('2026-02-02T00:00:00'); // Hardcoded to February 2, 2026
-    const monday = new Date(startDate);
-    
+    // Generate 2 weeks of workdays (Mon-Fri) anchored to the current week.
+    const reference = new Date();
+    reference.setHours(12, 0, 0, 0);
+    const day = reference.getDay(); // 0 Sun ... 6 Sat
+    const diffToMonday = (day + 6) % 7;
+    const monday = new Date(reference);
+    monday.setDate(reference.getDate() - diffToMonday);
+
     const firstWeekDates = [];
     const secondWeekDates = [];
-    
+
     for (let i = 0; i < 5; i++) {
         const d = new Date(monday);
         d.setDate(monday.getDate() + i);
-        firstWeekDates.push(d.toISOString().split('T')[0]);
+        firstWeekDates.push(toDateKeyLocal(d));
     }
     for (let i = 7; i < 12; i++) {
         const d = new Date(monday);
         d.setDate(monday.getDate() + i);
-        secondWeekDates.push(d.toISOString().split('T')[0]);
+        secondWeekDates.push(toDateKeyLocal(d));
     }
-    
+
     return {
         firstWeekDates,
         secondWeekDates,
@@ -4493,7 +4855,7 @@ function renderAgendaTopicsList(topics) {
 function renderAgendaPage() {
     const container = document.getElementById('agendaPageContent');
     if (!container) return;
-    
+
     const agendas = dashboardData.agendaItems || [];
     if (!agendas.length) {
         container.innerHTML = '<p style="color: var(--color-slate-500); text-align: center; padding: 2rem;">No upcoming agendas found.</p>';
@@ -4501,37 +4863,38 @@ function renderAgendaPage() {
         if (summary) summary.textContent = 'No upcoming agendas found.';
         return;
     }
-    
-    const grouped = {};
+
+    const groupedByType = {};
     const typeCounts = {};
+    const dateSet = new Set();
+
     agendas.forEach(item => {
-        const key = item.date || '';
-        if (!grouped[key]) grouped[key] = [];
-        grouped[key].push(item);
-        
         const typeKey = item.meetingType || item.title || 'Agenda';
+        if (!groupedByType[typeKey]) groupedByType[typeKey] = [];
+        groupedByType[typeKey].push(item);
         typeCounts[typeKey] = (typeCounts[typeKey] || 0) + 1;
+        if (item.date) dateSet.add(item.date);
     });
-    
-    const sortedDates = Object.keys(grouped).sort();
+
+    const types = Object.keys(groupedByType).sort();
     const summary = document.querySelector('.agenda-summary');
     if (summary) {
-        summary.textContent = `${agendas.length} upcoming agendas • ${sortedDates.length} dates`;
+        summary.textContent = `${agendas.length} upcoming agendas • ${types.length} meeting types`;
     }
-    
+
     const overviewCards = [
         {
             title: 'Total Agendas',
             value: String(agendas.length),
-            meta: `${sortedDates.length} upcoming dates`
+            meta: `${dateSet.size} upcoming dates`
         },
-        ...Object.keys(typeCounts).sort().map(type => ({
+        ...types.map(type => ({
             title: type,
-            value: String(typeCounts[type]),
+            value: String(typeCounts[type] || 0),
             meta: 'Upcoming sessions'
         }))
     ];
-    
+
     const overviewHtml = `
         <div class="agenda-overview">
             ${overviewCards.map(card => `
@@ -4543,48 +4906,90 @@ function renderAgendaPage() {
             `).join('')}
         </div>
     `;
-    
-    container.innerHTML = overviewHtml + sortedDates.map(dateKey => {
-        const items = grouped[dateKey] || [];
-        const dateTitle = dateKey ? formatDate(dateKey) : 'Unknown Date';
-        
+
+    const renderAgendaMeetingCard = (item, compact) => {
+        const timeDisplay = formatTimeStandard(item.time || item.time24 || '');
+        const metaParts = [];
+        if (timeDisplay) metaParts.push(timeDisplay);
+        if (item.dateFormatted || item.date) metaParts.push(item.dateFormatted || item.date);
+        if (item.meetingType && item.meetingType !== item.title) metaParts.push(item.meetingType);
+        const metaLine = metaParts.join(' • ');
+        const linkLabel = item.linkLabel || 'Open Agenda';
+        const agendaLink = item.agendaLink ? `
+            <a class="agenda-link" href="${escapeHtml(item.agendaLink)}" target="_blank" rel="noopener">
+                <svg class="icon-xs" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                </svg>
+                ${escapeHtml(linkLabel)}
+            </a>
+        ` : '';
+
         return `
-            <div class="agenda-date-group">
-                <div class="agenda-date-label">Meeting Date</div>
-                <div class="agenda-date-title">${escapeHtml(dateTitle)}</div>
-                ${items.map(item => {
-                    const timeDisplay = formatTimeStandard(item.time || item.time24 || '');
-                    const metaParts = [];
-                    if (timeDisplay) metaParts.push(timeDisplay);
-                    if (item.dateFormatted || item.date) metaParts.push(item.dateFormatted || item.date);
-                    if (item.meetingType && item.meetingType !== item.title) metaParts.push(item.meetingType);
-                    const metaLine = metaParts.join(' • ');
-                    const linkLabel = item.linkLabel || 'Open Agenda';
-                    const agendaLink = item.agendaLink ? `
-                        <a class="agenda-link" href="${escapeHtml(item.agendaLink)}" target="_blank">
-                            <svg class="icon-xs" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                            </svg>
-                            ${escapeHtml(linkLabel)}
-                        </a>
-                    ` : '';
-                    
-                    return `
-                        <div class="agenda-meeting">
-                            <div class="agenda-meeting-header">
-                                <div>
-                                    <div class="agenda-meeting-title">${escapeHtml(cleanMeetingTitle(item.title || ''))}</div>
-                                    <div class="agenda-meeting-meta">${metaLine ? escapeHtml(metaLine) : ''}</div>
-                                </div>
-                                ${agendaLink}
-                            </div>
-                            ${renderAgendaTopicsList(item.topics || [])}
-                        </div>
-                    `;
-                }).join('')}
+            <div class="agenda-meeting${compact ? ' agenda-meeting-compact' : ''}">
+                <div class="agenda-meeting-header">
+                    <div>
+                        <div class="agenda-meeting-title">${escapeHtml(cleanMeetingTitle(item.title || ''))}</div>
+                        <div class="agenda-meeting-meta">${metaLine ? escapeHtml(metaLine) : ''}</div>
+                    </div>
+                    ${agendaLink}
+                </div>
+                ${renderAgendaTopicsList(item.topics || [])}
             </div>
         `;
-    }).join('');
+    };
+
+    const renderAgendaHistoryItem = (item) => {
+        const dateLabel = item.dateFormatted || (item.date ? formatDate(item.date) : 'TBD');
+        return `
+            <details class="agenda-history-item">
+                <summary>
+                    <span>${escapeHtml(dateLabel)}</span>
+                    <span>${escapeHtml(cleanMeetingTitle(item.title || item.meetingType || 'Agenda'))}</span>
+                </summary>
+                <div class="agenda-history-content">
+                    ${renderAgendaMeetingCard(item, true)}
+                </div>
+            </details>
+        `;
+    };
+
+    const preferredTypes = (dashboardData.agendaTypes || []).filter(Boolean);
+    const knownTypes = preferredTypes.filter(type => groupedByType[type]);
+    const otherTypes = Object.keys(groupedByType).filter(type => !knownTypes.includes(type)).sort();
+    const typesForColumns = [...knownTypes, ...otherTypes];
+
+    const columnsHtml = `
+        <div class="agenda-columns">
+            ${typesForColumns.map(type => {
+                const items = groupedByType[type].slice();
+                const { upcoming, others } = splitAgendaItemsByUpcoming(items);
+                const upcomingDate = upcoming && upcoming.date ? formatDate(upcoming.date) : 'No upcoming date';
+
+                return `
+                    <div class="agenda-column-card">
+                        <div class="agenda-column-header">
+                            <div>
+                                <div class="agenda-column-title">${escapeHtml(type)}</div>
+                                <div class="agenda-column-meta">${escapeHtml(upcomingDate)}</div>
+                            </div>
+                            <span class="agenda-upcoming-label">Next up</span>
+                        </div>
+                        ${upcoming ? renderAgendaMeetingCard(upcoming, false) : '<div class="agenda-empty">No upcoming meeting scheduled.</div>'}
+                        ${others.length ? `
+                            <details class="agenda-future-accordion">
+                                <summary class="agenda-future-summary">All others (${others.length})</summary>
+                                <div class="agenda-history-list">
+                                    ${others.map(item => renderAgendaHistoryItem(item)).join('')}
+                                </div>
+                            </details>
+                        ` : '<div class="agenda-empty">No future dates scheduled.</div>'}
+                    </div>
+                `;
+            }).join('')}
+        </div>
+    `;
+
+    container.innerHTML = overviewHtml + columnsHtml;
 }
 
 // ============================================================================
@@ -4909,6 +5314,80 @@ function renderSidebarLinks() {
     } else {
         docRepoContainer.innerHTML = '<p style="font-size: 0.75rem; color: var(--color-slate-400); padding: 0.5rem;">No documents available</p>';
     }
+
+    renderSidebarUpcomingAgendas();
+}
+
+function renderSidebarUpcomingAgendas() {
+    const container = document.getElementById('sidebarUpcomingAgendas');
+    if (!container) return;
+
+    const agendaItems = (dashboardData.agendaItems || []).filter(Boolean);
+    if (!agendaItems.length) {
+        container.innerHTML = '<p style="font-size: 0.75rem; color: var(--color-slate-400); padding: 0.5rem;">No upcoming agendas available</p>';
+        return;
+    }
+
+    const groupedByType = {};
+    agendaItems.forEach(item => {
+        const type = item.meetingType || item.title || 'Agenda';
+        if (!groupedByType[type]) groupedByType[type] = [];
+        groupedByType[type].push(item);
+    });
+
+    const preferredTypes = (dashboardData.agendaTypes || []).filter(Boolean);
+    const knownTypes = preferredTypes.filter(type => groupedByType[type]);
+    const otherTypes = Object.keys(groupedByType).filter(type => !knownTypes.includes(type)).sort();
+    const orderedTypes = [...knownTypes, ...otherTypes];
+
+    container.innerHTML = `
+        <div class="sidebar-upcoming-list">
+            ${orderedTypes.map(type => {
+                const { upcoming, others } = splitAgendaItemsByUpcoming(groupedByType[type]);
+                const topicPreview = upcoming && Array.isArray(upcoming.topics)
+                    ? upcoming.topics.slice(0, 2).map(topic => {
+                        const title = typeof topic === 'string' ? topic : (topic && (topic.title || topic.topic || topic.name) ? String(topic.title || topic.topic || topic.name) : '');
+                        return title ? `<div class="sidebar-upcoming-topic">${escapeHtml(title)}</div>` : '';
+                    }).filter(Boolean).join('')
+                    : '';
+
+                const renderCompactItem = (item) => {
+                    const dateLabel = item.dateFormatted || (item.date ? formatDate(item.date) : 'TBD');
+                    const title = cleanMeetingTitle(item.title || item.meetingType || 'Agenda');
+                    return `
+                        <div class="sidebar-upcoming-more-item">
+                            <div class="sidebar-upcoming-next-date">${escapeHtml(dateLabel)}</div>
+                            <div class="sidebar-upcoming-next-title">${escapeHtml(title)}</div>
+                        </div>
+                    `;
+                };
+
+                return `
+                    <div class="sidebar-upcoming-type">
+                        <div class="sidebar-upcoming-type-head">
+                            <div class="sidebar-upcoming-type-title">${escapeHtml(type)}</div>
+                            <div class="sidebar-upcoming-type-count">${groupedByType[type].length} agenda${groupedByType[type].length === 1 ? '' : 's'}</div>
+                        </div>
+                        ${upcoming ? `
+                            <div class="sidebar-upcoming-next">
+                                <div class="sidebar-upcoming-next-date">${escapeHtml(upcoming.dateFormatted || (upcoming.date ? formatDate(upcoming.date) : 'TBD'))}</div>
+                                <div class="sidebar-upcoming-next-title">${escapeHtml(cleanMeetingTitle(upcoming.title || type))}</div>
+                                ${topicPreview ? `<div class="sidebar-upcoming-topics">${topicPreview}</div>` : ''}
+                            </div>
+                        ` : '<div class="sidebar-upcoming-next"><div class="sidebar-upcoming-next-title">No upcoming agenda</div></div>'}
+                        ${others.length ? `
+                            <details class="sidebar-upcoming-more">
+                                <summary>All others (${others.length})</summary>
+                                <div class="sidebar-upcoming-more-list">
+                                    ${others.map(renderCompactItem).join('')}
+                                </div>
+                            </details>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('')}
+        </div>
+    `;
 }
 
 // ============================================================================
@@ -5848,9 +6327,12 @@ function handleSaveAgenda() {
                         // Reset form
                         agendaTopics = [''];
                         agendaLink = '';
-                        document.getElementById('recurringMeetingSelect').value = '';
-                        document.getElementById('agendaDate').value = '';
-                        document.getElementById('agendaDateSection').classList.add('hidden');
+                        const recurringSelect = document.getElementById('recurringMeetingSelect');
+                        const agendaDateInput = document.getElementById('agendaDate');
+                        const agendaDateSection = document.getElementById('agendaDateSection');
+                        if (recurringSelect) recurringSelect.value = '';
+                        if (agendaDateInput) agendaDateInput.value = '';
+                        if (agendaDateSection) agendaDateSection.classList.add('hidden');
                         loadDashboardData();
                     })
                     .withFailureHandler(function() {
@@ -6954,7 +7436,9 @@ function openPDFExportModal() {
     const dayFilters = document.getElementById('pdfDayFilters');
     const { allDates: twoWeekDates } = getTwoWeekScheduleDates();
     const twoWeekDateSet = new Set(twoWeekDates);
-    const meetingsInView = (dashboardData.meetings || []).filter(m => m.date && twoWeekDateSet.has(m.date));
+    const meetingsInView = (dashboardData.meetings || []).filter(m =>
+        m && m.date && twoWeekDateSet.has(m.date) && shouldIncludeInExecTwoWeekView(m)
+    );
     
     if (!meetingsInView || meetingsInView.length === 0) {
         meetingsList.innerHTML = '<p style="color: var(--color-slate-500); text-align: center; padding: 1rem;">No meetings available</p>';
