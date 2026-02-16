@@ -429,6 +429,16 @@
             overflow-y: auto;
         }
 
+        .sidebar-hot-content.open {
+            max-height: 420px;
+            overflow-y: auto;
+        }
+
+        .sidebar-recurring-content.open {
+            max-height: 460px;
+            overflow-y: auto;
+        }
+
         /* Sidebar Links */
         .sidebar-link {
             display: flex;
@@ -550,6 +560,102 @@
             background: var(--color-slate-50);
         }
 
+        .sidebar-hot-list {
+            display: grid;
+            gap: 0.5rem;
+        }
+
+        .sidebar-hot-item {
+            border: 1px solid var(--color-slate-200);
+            border-radius: 0.6rem;
+            background: white;
+            padding: 0.5rem 0.6rem;
+        }
+
+        .sidebar-hot-title {
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--color-slate-800);
+            line-height: 1.35;
+        }
+
+        .sidebar-hot-meta {
+            margin-top: 0.2rem;
+            font-size: 0.68rem;
+            color: var(--color-slate-500);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.4rem;
+        }
+
+        .sidebar-hot-level {
+            font-size: 0.62rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            padding: 0.12rem 0.35rem;
+            border-radius: 999px;
+            border: 1px solid var(--color-red-200);
+            color: var(--color-red-700);
+            background: var(--color-red-50);
+            white-space: nowrap;
+        }
+
+        .sidebar-recurring-list {
+            display: grid;
+            gap: 0.5rem;
+        }
+
+        .sidebar-recurring-item {
+            border: 1px solid var(--color-slate-200);
+            border-radius: 0.65rem;
+            background: white;
+            overflow: hidden;
+        }
+
+        .sidebar-recurring-item summary {
+            list-style: none;
+            cursor: pointer;
+            padding: 0.5rem 0.6rem;
+            display: grid;
+            gap: 0.15rem;
+            background: var(--color-slate-50);
+            border-bottom: 1px solid var(--color-slate-200);
+        }
+
+        .sidebar-recurring-item summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .sidebar-recurring-name {
+            font-size: 0.76rem;
+            font-weight: 800;
+            color: var(--color-slate-800);
+            line-height: 1.25;
+        }
+
+        .sidebar-recurring-next {
+            font-size: 0.66rem;
+            color: var(--color-slate-500);
+            font-weight: 600;
+        }
+
+        .sidebar-recurring-dates {
+            display: grid;
+            gap: 0.35rem;
+            padding: 0.5rem 0.6rem 0.6rem;
+        }
+
+        .sidebar-recurring-date {
+            font-size: 0.68rem;
+            color: var(--color-slate-600);
+            background: var(--color-slate-50);
+            border: 1px solid var(--color-slate-200);
+            border-radius: 0.45rem;
+            padding: 0.25rem 0.35rem;
+        }
+
         /* Completed Items */
         .completed-item {
             display: flex;
@@ -663,11 +769,73 @@
             text-transform: uppercase;
         }
 
-	        .section-title.overview-title {
-	            font-size: 1.1rem;
-	            font-weight: 700;
-	            letter-spacing: 0.08em;
-	        }
+        .section-title.overview-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+        }
+
+        .hot-topics-commentary-card {
+            border: 1px solid var(--color-slate-200);
+            border-radius: 0.75rem;
+            background: white;
+            padding: 0.7rem 0.8rem;
+            box-shadow: 0 6px 14px rgba(15, 23, 42, 0.05);
+            margin-bottom: 0.75rem;
+        }
+
+        .hot-topics-commentary-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+            margin-bottom: 0.45rem;
+        }
+
+        .hot-topics-commentary-title {
+            font-size: 0.78rem;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            color: var(--color-slate-700);
+            text-transform: uppercase;
+        }
+
+        .hot-topics-commentary-meta {
+            font-size: 0.68rem;
+            color: var(--color-slate-500);
+            font-weight: 600;
+        }
+
+        .hot-topics-commentary-preview {
+            font-size: 0.72rem;
+            color: var(--color-slate-600);
+            margin-bottom: 0.45rem;
+            line-height: 1.3;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .hot-topics-commentary-input {
+            width: 100%;
+            min-height: 72px;
+            max-height: 120px;
+            resize: vertical;
+            border: 1px solid var(--color-slate-300);
+            border-radius: 0.55rem;
+            padding: 0.5rem 0.6rem;
+            font-size: 0.78rem;
+            line-height: 1.3;
+            color: var(--color-slate-800);
+            background: var(--color-slate-50);
+        }
+
+        .hot-topics-commentary-input:focus {
+            outline: none;
+            border-color: var(--color-red-400);
+            box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.12);
+            background: white;
+        }
 
 	        /* "On The Radar" (Overview top section) */
 	        .radar-card {
@@ -3091,12 +3259,6 @@
                     </svg>
                     Documents
                 </button>
-                <button class="page-tab" onclick="switchPage('hc')">
-                    <svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                    </svg>
-                    HC
-                </button>
             </div>
         </div>
         <div class="user-actions">
@@ -3153,6 +3315,42 @@
                     <div class="calendar-day-header">FRI</div>
                 </div>
                 <div class="calendar-grid" id="calendarDays"></div>
+            </div>
+
+            <!-- Hot Topics -->
+            <div class="sidebar-accordion">
+                <button class="accordion-header open" onclick="toggleAccordion(this)">
+                    <span class="accordion-title">
+                        <svg class="icon-xs accordion-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                        Hot Topics
+                    </span>
+                    <svg class="icon-xs accordion-icon chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </button>
+                <div class="accordion-content open sidebar-hot-content" id="sidebarHotTopics">
+                    <div class="loading-spinner">Loading...</div>
+                </div>
+            </div>
+
+            <!-- Weekly Recurring Meetings -->
+            <div class="sidebar-accordion">
+                <button class="accordion-header open" onclick="toggleAccordion(this)">
+                    <span class="accordion-title">
+                        <svg class="icon-xs accordion-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                        Weekly Recurring Meetings
+                    </span>
+                    <svg class="icon-xs accordion-icon chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </button>
+                <div class="accordion-content open sidebar-recurring-content" id="sidebarRecurringMeetings">
+                    <div class="loading-spinner">Loading...</div>
+                </div>
             </div>
 
             <!-- Admin & Settings -->
@@ -3283,8 +3481,10 @@
                         <div class="section-header">
                             <h2 class="section-title overview-title">DASHBOARD CONTEXT</h2>
                         </div>
-	                        
-	                        <!-- Deliverables Section -->
+
+                        <div id="hotTopicsCommentarySection"></div>
+
+		                        <!-- Deliverables Section -->
                         <div id="deliverablesSection">
                             <div class="loading-message">Loading dashboard data...</div>
                         </div>
@@ -3504,28 +3704,6 @@
                         </div>
                     </div>
 
-                    <!-- HC Page -->
-                    <div id="hcPage" class="page-content hidden">
-                        <div class="card">
-                            <div class="card-header">
-                                <h2 class="card-title">
-                                    <svg class="icon card-title-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                    </svg>
-                                    Headcount Report
-                                </h2>
-                                <span style="font-size: 0.75rem; color: var(--color-slate-500);">February HC</span>
-                            </div>
-                            <div style="height: 720px; border: 1px solid var(--color-slate-200); border-radius: 0.75rem; overflow: hidden; background: white;">
-                                <iframe src="february HC.html" title="February Headcount Report" style="width: 100%; height: 100%; border: none;"></iframe>
-                            </div>
-                            <div style="margin-top: 1rem; display: flex; justify-content: flex-end;">
-                                <a href="february HC.html" target="_blank" class="btn-secondary" rel="noopener">
-                                    Open report in new tab
-                                </a>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </main>
@@ -3614,6 +3792,7 @@ let selectedAgendaDate = '';
 let agendaTopics = [''];
 let agendaLink = '';
 let agendaEntryTopics = [{ title: '', duration: '' }];
+const HOT_TOPICS_COMMENTARY_KEY = 'vgd.hotTopicsCommentary';
 
 // ============================================================================
 // INITIALIZATION
@@ -3695,14 +3874,7 @@ document.addEventListener('DOMContentLoaded', function() {
             kpiLinks: [
                 { name: "Sales Dashboard", url: "#" }
             ],
-            documentRepoLinks: [
-                {
-                    name: "February HC Report",
-                    owner: "People Ops",
-                    url: "february HC.html",
-                    comment: "Monthly headcount overview"
-                }
-            ],
+            documentRepoLinks: [],
             executiveUpdates: [
                 { name: "Q4 Summary", url: "#", dateAdded: "Jan 15, 2026" }
             ],
@@ -3840,8 +4012,9 @@ function refreshDashboard() {
 	
     try {
         console.log('Rendering deliverables...');
+        renderHotTopicsCommentary();
         renderDeliverables();
-	        console.log('✅ Deliverables rendered');
+        console.log('✅ Deliverables rendered');
         
         // Attach click handlers to deliverable rows
         setTimeout(() => {
@@ -3977,6 +4150,54 @@ function showError(message) {
             </div>`;
         }
     });
+}
+
+function saveHotTopicsCommentary(value) {
+    try {
+        localStorage.setItem(HOT_TOPICS_COMMENTARY_KEY, String(value || ''));
+    } catch (e) {
+        console.warn('Could not save hot topics commentary:', e);
+    }
+}
+
+function loadHotTopicsCommentary() {
+    try {
+        return localStorage.getItem(HOT_TOPICS_COMMENTARY_KEY) || '';
+    } catch (e) {
+        return '';
+    }
+}
+
+function renderHotTopicsCommentary() {
+    const container = document.getElementById('hotTopicsCommentarySection');
+    if (!container) return;
+
+    const hotMeetings = (dashboardData.meetings || [])
+        .filter(m => m && isMeetingHotTopic(m))
+        .slice()
+        .sort(compareMeetingsByDateTime);
+
+    const count = hotMeetings.length;
+    const preview = hotMeetings.slice(0, 2).map(m => {
+        const dateLabel = formatSidebarMeetingDate(m);
+        return `${cleanMeetingTitle(m.title || 'Meeting')} (${dateLabel})`;
+    }).join('  •  ');
+
+    container.innerHTML = `
+        <div class="hot-topics-commentary-card">
+            <div class="hot-topics-commentary-head">
+                <div class="hot-topics-commentary-title">Hot Topics Commentary</div>
+                <div class="hot-topics-commentary-meta">${count} hot topic${count === 1 ? '' : 's'}</div>
+            </div>
+            <div class="hot-topics-commentary-preview">${preview ? escapeHtml(preview) : 'No hot topics flagged right now.'}</div>
+            <textarea
+                id="hotTopicsCommentaryInput"
+                class="hot-topics-commentary-input"
+                placeholder="Add quick commentary for upcoming initiatives..."
+                oninput="saveHotTopicsCommentary(this.value)"
+            >${escapeHtml(loadHotTopicsCommentary())}</textarea>
+        </div>
+    `;
 }
 
 // ============================================================================
@@ -5315,7 +5536,142 @@ function renderSidebarLinks() {
         docRepoContainer.innerHTML = '<p style="font-size: 0.75rem; color: var(--color-slate-400); padding: 0.5rem;">No documents available</p>';
     }
 
+    renderSidebarHotTopics();
+    renderSidebarRecurringMeetings();
     renderSidebarUpcomingAgendas();
+}
+
+function getMeetingDateTimeValue(meeting) {
+    const dateObj = parseDateKeyLocal(meeting && meeting.date ? meeting.date : '');
+    if (!dateObj) return Number.POSITIVE_INFINITY;
+    return dateObj.getTime() + (timeToMinutes(meeting && (meeting.time24 || meeting.time) ? (meeting.time24 || meeting.time) : '') * 60000);
+}
+
+function compareMeetingsByDateTime(a, b) {
+    const diff = getMeetingDateTimeValue(a) - getMeetingDateTimeValue(b);
+    if (diff !== 0) return diff;
+    return String(a && a.title ? a.title : '').localeCompare(String(b && b.title ? b.title : ''));
+}
+
+function formatSidebarMeetingDate(meeting) {
+    const d = parseDateKeyLocal(meeting && meeting.date ? meeting.date : '');
+    if (!d) return meeting && meeting.dateFormatted ? String(meeting.dateFormatted) : 'TBD';
+    const datePart = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    const timePart = formatTimeStandard(meeting && (meeting.time24 || meeting.time) ? (meeting.time24 || meeting.time) : '');
+    return timePart ? `${datePart} • ${timePart}` : datePart;
+}
+
+function renderSidebarHotTopics() {
+    const container = document.getElementById('sidebarHotTopics');
+    if (!container) return;
+
+    const meetings = (dashboardData.meetings || []).filter(m => m && isMeetingHotTopic(m));
+    if (!meetings.length) {
+        container.innerHTML = '<p style="font-size: 0.75rem; color: var(--color-slate-400); padding: 0.5rem;">No hot topics right now.</p>';
+        return;
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const upcoming = meetings.filter(m => {
+        const d = parseDateKeyLocal(m.date || '');
+        return d && d.getTime() >= today.getTime();
+    });
+    const source = upcoming.length ? upcoming : meetings;
+    const rows = source.slice().sort(compareMeetingsByDateTime).slice(0, 8);
+
+    container.innerHTML = `
+        <div class="sidebar-hot-list">
+            ${rows.map(m => {
+                const level = String(m.hotTopicLevel || '').trim().toLowerCase();
+                const levelLabel = level === 'urgent' ? 'Urgent' : (level === 'must-attend' ? 'Must Attend' : 'Hot');
+                return `
+                    <div class="sidebar-hot-item">
+                        <div class="sidebar-hot-title">${escapeHtml(cleanMeetingTitle(m.title || 'Meeting'))}</div>
+                        <div class="sidebar-hot-meta">
+                            <span>${escapeHtml(formatSidebarMeetingDate(m))}</span>
+                            <span class="sidebar-hot-level">${escapeHtml(levelLabel)}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('')}
+        </div>
+    `;
+}
+
+function renderSidebarRecurringMeetings() {
+    const container = document.getElementById('sidebarRecurringMeetings');
+    if (!container) return;
+
+    const meetings = dashboardData.meetings || [];
+    const weeklyMeetings = meetings.filter(m => {
+        const freq = String(m && m.frequency ? m.frequency : '').toLowerCase();
+        return freq.includes('weekly') || freq.includes('bi-weekly') || freq.includes('biweekly');
+    });
+
+    const grouped = {};
+    weeklyMeetings.forEach(m => {
+        const key = cleanMeetingTitle(m.title || 'Recurring Meeting');
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push(m);
+    });
+
+    const rows = Object.keys(grouped).sort().map(name => {
+        const items = grouped[name].slice().sort(compareMeetingsByDateTime);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const upcoming = items.filter(m => {
+            const d = parseDateKeyLocal(m.date || '');
+            return d && d.getTime() >= today.getTime();
+        });
+        const dateRows = (upcoming.length ? upcoming : items).slice(0, 6);
+        const next = dateRows.length ? dateRows[0] : null;
+        return { name, next, dates: dateRows };
+    });
+
+    if (!rows.length) {
+        const fallback = (dashboardData.recurringMeetings || [])
+            .filter(r => String(r && r.frequency ? r.frequency : 'weekly').toLowerCase().includes('week'));
+        if (!fallback.length) {
+            container.innerHTML = '<p style="font-size: 0.75rem; color: var(--color-slate-400); padding: 0.5rem;">No weekly recurring meetings found.</p>';
+            return;
+        }
+        container.innerHTML = `
+            <div class="sidebar-recurring-list">
+                ${fallback.map((r, idx) => {
+                    const nextDate = formatDate(getNextDate(r.frequency || 'weekly'));
+                    return `
+                        <details class="sidebar-recurring-item"${idx === 0 ? ' open' : ''}>
+                            <summary>
+                                <span class="sidebar-recurring-name">${escapeHtml(r.name || r.title || 'Recurring Meeting')}</span>
+                                <span class="sidebar-recurring-next">Next: ${escapeHtml(nextDate)}</span>
+                            </summary>
+                            <div class="sidebar-recurring-dates">
+                                <div class="sidebar-recurring-date">${escapeHtml(nextDate)}</div>
+                            </div>
+                        </details>
+                    `;
+                }).join('')}
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = `
+        <div class="sidebar-recurring-list">
+            ${rows.map((row, idx) => `
+                <details class="sidebar-recurring-item"${idx === 0 ? ' open' : ''}>
+                    <summary>
+                        <span class="sidebar-recurring-name">${escapeHtml(row.name)}</span>
+                        <span class="sidebar-recurring-next">Next: ${escapeHtml(row.next ? formatSidebarMeetingDate(row.next) : 'TBD')}</span>
+                    </summary>
+                    <div class="sidebar-recurring-dates">
+                        ${row.dates.map(item => `<div class="sidebar-recurring-date">${escapeHtml(formatSidebarMeetingDate(item))}</div>`).join('')}
+                    </div>
+                </details>
+            `).join('')}
+        </div>
+    `;
 }
 
 function renderSidebarUpcomingAgendas() {
