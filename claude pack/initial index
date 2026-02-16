@@ -654,6 +654,28 @@
             border: 1px solid var(--color-slate-200);
             border-radius: 0.45rem;
             padding: 0.25rem 0.35rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.45rem;
+        }
+
+        .sidebar-recurring-time {
+            font-size: 0.64rem;
+            font-weight: 800;
+            color: var(--color-slate-700);
+            background: white;
+            border: 1px solid var(--color-slate-300);
+            border-radius: 999px;
+            padding: 0.08rem 0.35rem;
+            white-space: nowrap;
+        }
+
+        .sidebar-recurring-meeting-title {
+            font-size: 0.69rem;
+            color: var(--color-slate-700);
+            font-weight: 600;
+            line-height: 1.2;
         }
 
         /* Completed Items */
@@ -4172,24 +4194,13 @@ function renderHotTopicsCommentary() {
     const container = document.getElementById('hotTopicsCommentarySection');
     if (!container) return;
 
-    const hotMeetings = (dashboardData.meetings || [])
-        .filter(m => m && isMeetingHotTopic(m))
-        .slice()
-        .sort(compareMeetingsByDateTime);
-
-    const count = hotMeetings.length;
-    const preview = hotMeetings.slice(0, 2).map(m => {
-        const dateLabel = formatSidebarMeetingDate(m);
-        return `${cleanMeetingTitle(m.title || 'Meeting')} (${dateLabel})`;
-    }).join('  •  ');
-
     container.innerHTML = `
         <div class="hot-topics-commentary-card">
             <div class="hot-topics-commentary-head">
                 <div class="hot-topics-commentary-title">Hot Topics Commentary</div>
-                <div class="hot-topics-commentary-meta">${count} hot topic${count === 1 ? '' : 's'}</div>
+                <div class="hot-topics-commentary-meta">Local note</div>
             </div>
-            <div class="hot-topics-commentary-preview">${preview ? escapeHtml(preview) : 'No hot topics flagged right now.'}</div>
+            <div class="hot-topics-commentary-preview">Commentary only. This box is not populated from sheet data.</div>
             <textarea
                 id="hotTopicsCommentaryInput"
                 class="hot-topics-commentary-input"
@@ -5603,70 +5614,87 @@ function renderSidebarRecurringMeetings() {
     const container = document.getElementById('sidebarRecurringMeetings');
     if (!container) return;
 
+    const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const getWeekdayIndex = (meeting) => {
+        const d = parseDateKeyLocal(meeting && meeting.date ? meeting.date : '');
+        if (!d) return null;
+        return (d.getDay() + 6) % 7; // Monday = 0
+    };
+    const getRecurringRank = (meeting) => {
+        const dayIdx = getWeekdayIndex(meeting);
+        if (dayIdx === null) return Number.POSITIVE_INFINITY;
+        const minutes = timeToMinutes(meeting && (meeting.time24 || meeting.time) ? (meeting.time24 || meeting.time) : '');
+        return (dayIdx * 1440) + (Number.isFinite(minutes) ? minutes : 1441);
+    };
+
     const meetings = dashboardData.meetings || [];
     const weeklyMeetings = meetings.filter(m => {
         const freq = String(m && m.frequency ? m.frequency : '').toLowerCase();
         return freq.includes('weekly') || freq.includes('bi-weekly') || freq.includes('biweekly');
     });
 
-    const grouped = {};
+    const deduped = {};
     weeklyMeetings.forEach(m => {
-        const key = cleanMeetingTitle(m.title || 'Recurring Meeting');
-        if (!grouped[key]) grouped[key] = [];
-        grouped[key].push(m);
-    });
-
-    const rows = Object.keys(grouped).sort().map(name => {
-        const items = grouped[name].slice().sort(compareMeetingsByDateTime);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const upcoming = items.filter(m => {
-            const d = parseDateKeyLocal(m.date || '');
-            return d && d.getTime() >= today.getTime();
-        });
-        const dateRows = (upcoming.length ? upcoming : items).slice(0, 6);
-        const next = dateRows.length ? dateRows[0] : null;
-        return { name, next, dates: dateRows };
-    });
-
-    if (!rows.length) {
-        const fallback = (dashboardData.recurringMeetings || [])
-            .filter(r => String(r && r.frequency ? r.frequency : 'weekly').toLowerCase().includes('week'));
-        if (!fallback.length) {
-            container.innerHTML = '<p style="font-size: 0.75rem; color: var(--color-slate-400); padding: 0.5rem;">No weekly recurring meetings found.</p>';
+        const title = cleanMeetingTitle(m && m.title ? m.title : 'Recurring Meeting');
+        const timeLabel = formatTimeStandard(m && (m.time24 || m.time) ? (m.time24 || m.time) : '');
+        const key = `${normalizeAgendaKey(title)}__${normalizeAgendaKey(timeLabel)}`;
+        if (!deduped[key]) {
+            deduped[key] = m;
             return;
         }
-        container.innerHTML = `
-            <div class="sidebar-recurring-list">
-                ${fallback.map((r, idx) => {
-                    const nextDate = formatDate(getNextDate(r.frequency || 'weekly'));
-                    return `
-                        <details class="sidebar-recurring-item"${idx === 0 ? ' open' : ''}>
-                            <summary>
-                                <span class="sidebar-recurring-name">${escapeHtml(r.name || r.title || 'Recurring Meeting')}</span>
-                                <span class="sidebar-recurring-next">Next: ${escapeHtml(nextDate)}</span>
-                            </summary>
-                            <div class="sidebar-recurring-dates">
-                                <div class="sidebar-recurring-date">${escapeHtml(nextDate)}</div>
-                            </div>
-                        </details>
-                    `;
-                }).join('')}
-            </div>
-        `;
+        const currentRank = getRecurringRank(deduped[key]);
+        const nextRank = getRecurringRank(m);
+        if (nextRank < currentRank) deduped[key] = m;
+    });
+
+    const entries = Object.values(deduped).map(m => {
+        const dayIndex = getWeekdayIndex(m);
+        return {
+            dayIndex,
+            dayLabel: dayIndex === null ? 'Unscheduled' : dayNames[dayIndex],
+            title: cleanMeetingTitle(m && m.title ? m.title : 'Recurring Meeting'),
+            time: formatTimeStandard(m && (m.time24 || m.time) ? (m.time24 || m.time) : '') || 'Time TBD',
+            sortMinutes: timeToMinutes(m && (m.time24 || m.time) ? (m.time24 || m.time) : '')
+        };
+    }).sort((a, b) => {
+        const dayA = a.dayIndex === null ? 99 : a.dayIndex;
+        const dayB = b.dayIndex === null ? 99 : b.dayIndex;
+        if (dayA !== dayB) return dayA - dayB;
+        if (a.sortMinutes !== b.sortMinutes) return a.sortMinutes - b.sortMinutes;
+        return a.title.localeCompare(b.title);
+    });
+
+    const groupedByDay = {};
+    entries.forEach(entry => {
+        const key = String(entry.dayLabel);
+        if (!groupedByDay[key]) groupedByDay[key] = [];
+        groupedByDay[key].push(entry);
+    });
+    const orderedDayKeys = [
+        ...dayNames.filter(day => groupedByDay[day]),
+        ...Object.keys(groupedByDay).filter(day => !dayNames.includes(day)).sort()
+    ];
+
+    if (!orderedDayKeys.length) {
+        container.innerHTML = '<p style="font-size: 0.75rem; color: var(--color-slate-400); padding: 0.5rem;">No weekly recurring meetings found.</p>';
         return;
     }
 
     container.innerHTML = `
         <div class="sidebar-recurring-list">
-            ${rows.map((row, idx) => `
+            ${orderedDayKeys.map((dayKey, idx) => `
                 <details class="sidebar-recurring-item"${idx === 0 ? ' open' : ''}>
                     <summary>
-                        <span class="sidebar-recurring-name">${escapeHtml(row.name)}</span>
-                        <span class="sidebar-recurring-next">Next: ${escapeHtml(row.next ? formatSidebarMeetingDate(row.next) : 'TBD')}</span>
+                        <span class="sidebar-recurring-name">${escapeHtml(dayKey)}</span>
+                        <span class="sidebar-recurring-next">${groupedByDay[dayKey].length} meeting${groupedByDay[dayKey].length === 1 ? '' : 's'}</span>
                     </summary>
                     <div class="sidebar-recurring-dates">
-                        ${row.dates.map(item => `<div class="sidebar-recurring-date">${escapeHtml(formatSidebarMeetingDate(item))}</div>`).join('')}
+                        ${groupedByDay[dayKey].map(item => `
+                            <div class="sidebar-recurring-date">
+                                <span class="sidebar-recurring-time">${escapeHtml(item.time)}</span>
+                                <span class="sidebar-recurring-meeting-title">${escapeHtml(item.title)}</span>
+                            </div>
+                        `).join('')}
                     </div>
                 </details>
             `).join('')}
