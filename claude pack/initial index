@@ -3743,6 +3743,26 @@
                     <label style="display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Report Title</label>
                     <input type="text" id="pdfWeekTitle" value="Two-Week Executive Schedule" style="width: 100%; padding: 0.5rem; border: 1px solid var(--color-slate-300); border-radius: 0.375rem; font-size: 0.875rem;">
                 </div>
+
+                <div style="margin-bottom: 1rem; display: grid; grid-template-columns: minmax(180px, 220px) 1fr; gap: 1rem; align-items: center;">
+                    <label for="pdfTimeframeWeeks" style="font-size: 0.875rem; font-weight: 600; color: var(--color-slate-700);">Report Time Frame</label>
+                    <select id="pdfTimeframeWeeks" class="input-field" style="max-width: 240px;">
+                        <option value="1">1 Week</option>
+                        <option value="2" selected>2 Weeks</option>
+                        <option value="3">3 Weeks</option>
+                    </select>
+                </div>
+
+                <div style="margin-bottom: 1.25rem; display: flex; flex-direction: column; gap: 0.5rem;">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="checkbox" id="pdfExcludeWeekOne" checked>
+                        <span style="font-size: 0.875rem;">Start next week (exclude Week 1 / current week)</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="checkbox" id="pdfCompactOnePage" checked>
+                        <span style="font-size: 0.875rem;">Compact layout (try to fit on one page)</span>
+                    </label>
+                </div>
                 
                 <div style="margin-bottom: 1.5rem;">
                     <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
@@ -3768,6 +3788,17 @@
                     </div>
                     <div id="pdfMeetingsList" style="max-height: 300px; overflow-y: auto; border: 1px solid var(--color-slate-200); border-radius: 0.375rem; padding: 0.75rem;">
                         <div class="loading-spinner" style="text-align: center;">Loading meetings...</div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 1.25rem;">
+                    <label style="display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 0.75rem;">Sarcone Upcoming Deliverables</label>
+                    <label style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; font-size: 0.875rem; cursor: pointer;">
+                        <input type="checkbox" id="pdfExec1DeliverablesAll" checked>
+                        <span>All Sarcone's Upcoming Deliverables</span>
+                    </label>
+                    <div id="pdfDeliverablesList" style="max-height: 220px; overflow-y: auto; border: 1px solid var(--color-slate-200); border-radius: 0.375rem; padding: 0.75rem;">
+                        <div class="loading-spinner" style="text-align: center;">Loading deliverables...</div>
                     </div>
                 </div>
             </div>
@@ -7810,72 +7841,147 @@ function closeAddItemModal(event) {
 // PDF EXPORT FUNCTIONALITY
 // ============================================================================
 
-function openPDFExportModal() {
-    const modal = document.getElementById('pdfExportModal');
-    modal.classList.remove('hidden');
-    
-    // Populate meetings list
-    const meetingsList = document.getElementById('pdfMeetingsList');
-    const selectAllToggle = document.getElementById('pdfSelectAll');
-    const dayFilters = document.getElementById('pdfDayFilters');
-    const { allDates: twoWeekDates } = getTwoWeekScheduleDates();
-    const twoWeekDateSet = new Set(twoWeekDates);
-    const meetingsInView = (dashboardData.meetings || []).filter(m =>
-        m && m.date && twoWeekDateSet.has(m.date) && shouldIncludeInExecTwoWeekView(m)
-    );
-    
-    if (!meetingsInView || meetingsInView.length === 0) {
-        meetingsList.innerHTML = '<p style="color: var(--color-slate-500); text-align: center; padding: 1rem;">No meetings available</p>';
-        if (dayFilters) {
-            dayFilters.innerHTML = '<span style="color: var(--color-slate-400); font-size: 0.75rem;">No days with meetings in the 2-week view.</span>';
+function getPDFExportScheduleConfig() {
+    const weeksInput = document.getElementById('pdfTimeframeWeeks');
+    const excludeWeekOneInput = document.getElementById('pdfExcludeWeekOne');
+    const weeks = Math.min(4, Math.max(1, Number(weeksInput && weeksInput.value ? weeksInput.value : 2) || 2));
+    const excludeWeekOne = !!(excludeWeekOneInput && excludeWeekOneInput.checked);
+
+    const today = new Date();
+    today.setHours(12, 0, 0, 0);
+    const day = today.getDay();
+    const diffToMonday = (day + 6) % 7;
+    const currentMonday = new Date(today);
+    currentMonday.setDate(today.getDate() - diffToMonday);
+
+    const startMonday = new Date(currentMonday);
+    if (excludeWeekOne) startMonday.setDate(startMonday.getDate() + 7);
+
+    const weekBuckets = [];
+    const allDates = [];
+    for (let w = 0; w < weeks; w++) {
+        const monday = new Date(startMonday);
+        monday.setDate(startMonday.getDate() + (w * 7));
+        const dates = [];
+        for (let i = 0; i < 5; i++) {
+            const d = new Date(monday);
+            d.setDate(monday.getDate() + i);
+            const dateKey = toDateKeyLocal(d);
+            dates.push(dateKey);
+            allDates.push(dateKey);
         }
-        if (selectAllToggle) {
-            selectAllToggle.checked = false;
-            selectAllToggle.indeterminate = false;
-            selectAllToggle.disabled = true;
+        const weekLabel = `Week of ${monday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+        weekBuckets.push({ index: w, monday, label: weekLabel, dates });
+    }
+
+    return { weeks, excludeWeekOne, weekBuckets, allDates };
+}
+
+function renderPDFDeliverablesSelection() {
+    const list = document.getElementById('pdfDeliverablesList');
+    const selectAll = document.getElementById('pdfExec1DeliverablesAll');
+    if (!list) return;
+
+    const deliverables = (dashboardData.exec1Deliverables || [])
+        .filter(d => d && d.description && String(d.description).trim());
+
+    if (!deliverables.length) {
+        list.innerHTML = '<p style="color: var(--color-slate-500); text-align: center; padding: 0.5rem;">No Sarcone deliverables available</p>';
+        if (selectAll) {
+            selectAll.checked = false;
+            selectAll.disabled = true;
         }
         return;
     }
-    
-    if (selectAllToggle) {
-        selectAllToggle.disabled = false;
+
+    if (selectAll) {
+        selectAll.disabled = false;
     }
-    
-    // Detect conflicts
+
+    list.innerHTML = deliverables.map(d => {
+        const dueLabel = d.eta || d.etaFull || 'No ETA';
+        return `
+            <label style="display: flex; align-items: flex-start; gap: 0.65rem; padding: 0.55rem 0.25rem; border-bottom: 1px solid var(--color-slate-100); cursor: pointer;">
+                <input type="checkbox" class="pdf-deliverable-checkbox" value="${escapeHtml(d.id || '')}" checked style="margin-top: 0.2rem;">
+                <div style="flex: 1;">
+                    <div style="font-weight: 600; font-size: 0.83rem; color: var(--color-slate-800);">${escapeHtml(d.description)}</div>
+                    <div style="font-size: 0.72rem; color: var(--color-slate-500);">${escapeHtml(dueLabel)}${d.owner ? ` • ${escapeHtml(d.owner)}` : ''}</div>
+                </div>
+            </label>
+        `;
+    }).join('');
+
+    const boxes = Array.from(list.querySelectorAll('.pdf-deliverable-checkbox'));
+    const updateAllState = () => {
+        if (!selectAll) return;
+        const checkedCount = boxes.filter(cb => cb.checked).length;
+        selectAll.checked = checkedCount === boxes.length;
+        selectAll.indeterminate = checkedCount > 0 && checkedCount < boxes.length;
+    };
+
+    boxes.forEach(cb => {
+        cb.onchange = updateAllState;
+    });
+
+    if (selectAll) {
+        selectAll.onchange = () => {
+            boxes.forEach(cb => { cb.checked = selectAll.checked; });
+            updateAllState();
+        };
+    }
+
+    updateAllState();
+}
+
+function renderPDFMeetingSelection() {
+    const meetingsList = document.getElementById('pdfMeetingsList');
+    const selectAllToggle = document.getElementById('pdfSelectAll');
+    const dayFilters = document.getElementById('pdfDayFilters');
+    if (!meetingsList || !selectAllToggle || !dayFilters) return;
+
+    const scheduleConfig = getPDFExportScheduleConfig();
+    const reportDateSet = new Set(scheduleConfig.allDates);
+    const meetingsInView = (dashboardData.meetings || []).filter(m =>
+        m && m.date && reportDateSet.has(m.date) && shouldIncludeInExecTwoWeekView(m)
+    );
+
+    if (!meetingsInView.length) {
+        meetingsList.innerHTML = '<p style="color: var(--color-slate-500); text-align: center; padding: 1rem;">No meetings available in the selected time frame.</p>';
+        dayFilters.innerHTML = '<span style="color: var(--color-slate-400); font-size: 0.75rem;">No days with meetings in the selected time frame.</span>';
+        selectAllToggle.checked = false;
+        selectAllToggle.indeterminate = false;
+        selectAllToggle.disabled = true;
+        return;
+    }
+
+    selectAllToggle.disabled = false;
+
     const meetingsByDate = {};
     meetingsInView.forEach(m => {
-        if (!meetingsByDate[m.date]) {
-            meetingsByDate[m.date] = [];
-        }
+        if (!meetingsByDate[m.date]) meetingsByDate[m.date] = [];
         meetingsByDate[m.date].push(m);
     });
-    
-    // Mark conflicts
-    for (const date in meetingsByDate) {
+
+    for (const date of Object.keys(meetingsByDate)) {
         const timeSlots = {};
         meetingsByDate[date].forEach(m => {
             const timeKey = m.time24 || m.time || '00:00';
-            if (!timeSlots[timeKey]) {
-                timeSlots[timeKey] = [];
-            }
+            if (!timeSlots[timeKey]) timeSlots[timeKey] = [];
             timeSlots[timeKey].push(m);
         });
-        
-        for (const timeKey in timeSlots) {
+        Object.keys(timeSlots).forEach(timeKey => {
             if (timeSlots[timeKey].length > 1) {
-                timeSlots[timeKey].forEach(m => {
-                    m.hasConflict = true;
-                });
+                timeSlots[timeKey].forEach(m => { m.hasConflict = true; });
             }
-        }
+        });
     }
-    
-    // Render meetings list
+
     const sortedMeetings = [...meetingsInView].sort((a, b) => {
         const dateCompare = new Date(a.date) - new Date(b.date);
         if (dateCompare !== 0) return dateCompare;
         return timeToMinutes(a.time24 || a.time) - timeToMinutes(b.time24 || b.time);
     });
+
     meetingsList.innerHTML = sortedMeetings.map(m => `
         <label style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; border-bottom: 1px solid var(--color-slate-100); cursor: pointer;">
             <input type="checkbox" class="pdf-meeting-checkbox" value="${m.id}" data-date="${escapeHtml(m.date || '')}" checked>
@@ -7894,35 +8000,41 @@ function openPDFExportModal() {
 
     const meetingCheckboxes = Array.from(document.querySelectorAll('.pdf-meeting-checkbox'));
     const dayCheckboxes = [];
-    if (dayFilters) {
-        dayFilters.innerHTML = twoWeekDates.map(dateStr => {
+
+    dayFilters.innerHTML = scheduleConfig.weekBuckets.map((week, weekIdx) => {
+        const chips = week.dates.map(dateStr => {
             const count = (meetingsByDate[dateStr] || []).length;
             const d = new Date(dateStr + 'T00:00:00');
             const label = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
             const disabled = count === 0 ? 'disabled' : '';
             return `
-                <label style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.25rem 0.5rem; border: 1px solid var(--color-slate-200); border-radius: 999px; font-size: 0.75rem; cursor: ${count === 0 ? 'not-allowed' : 'pointer'}; color: ${count === 0 ? 'var(--color-slate-400)' : 'var(--color-slate-700)'};">
+                <label style="display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.2rem 0.45rem; border: 1px solid var(--color-slate-200); border-radius: 999px; font-size: 0.72rem; cursor: ${count === 0 ? 'not-allowed' : 'pointer'}; color: ${count === 0 ? 'var(--color-slate-400)' : 'var(--color-slate-700)'};">
                     <input type="checkbox" class="pdf-day-checkbox" value="${escapeHtml(dateStr)}" ${disabled} style="margin: 0;">
                     <span>${label} (${count})</span>
                 </label>
             `;
         }).join('');
-        dayCheckboxes.push(...Array.from(dayFilters.querySelectorAll('.pdf-day-checkbox')));
-    }
+        return `
+            <div style="display:flex; flex-wrap:wrap; gap:0.4rem; align-items:center;">
+                <span style="font-size:0.72rem; font-weight:700; color: var(--color-slate-500);">${scheduleConfig.weekBuckets.length > 1 ? `Week ${weekIdx + 1}:` : ''}</span>
+                ${chips}
+            </div>
+        `;
+    }).join('');
+
+    dayCheckboxes.push(...Array.from(dayFilters.querySelectorAll('.pdf-day-checkbox')));
 
     const updateSelectAllState = () => {
-        if (!selectAllToggle) return;
         const checkedCount = meetingCheckboxes.filter(cb => cb.checked).length;
         selectAllToggle.checked = checkedCount === meetingCheckboxes.length;
         selectAllToggle.indeterminate = checkedCount > 0 && checkedCount < meetingCheckboxes.length;
     };
 
     const updateDayFilterState = () => {
-        if (!dayCheckboxes.length) return;
         dayCheckboxes.forEach(dayCb => {
             const dateStr = dayCb.value;
             const dayMeetings = meetingCheckboxes.filter(cb => cb.dataset.date === dateStr);
-            if (dayMeetings.length === 0) {
+            if (!dayMeetings.length) {
                 dayCb.checked = false;
                 dayCb.indeterminate = false;
                 return;
@@ -7932,39 +8044,44 @@ function openPDFExportModal() {
             dayCb.indeterminate = checkedCount > 0 && checkedCount < dayMeetings.length;
         });
     };
-    
-    if (selectAllToggle) {
-        selectAllToggle.onchange = () => {
-            meetingCheckboxes.forEach(cb => {
-                cb.checked = selectAllToggle.checked;
-            });
-            updateSelectAllState();
-            updateDayFilterState();
-        };
-    }
+
+    selectAllToggle.onchange = () => {
+        meetingCheckboxes.forEach(cb => { cb.checked = selectAllToggle.checked; });
+        updateSelectAllState();
+        updateDayFilterState();
+    };
 
     dayCheckboxes.forEach(dayCb => {
         dayCb.onchange = () => {
             const dateStr = dayCb.value;
-            meetingCheckboxes
-                .filter(cb => cb.dataset.date === dateStr)
-                .forEach(cb => {
-                    cb.checked = dayCb.checked;
-                });
+            meetingCheckboxes.filter(cb => cb.dataset.date === dateStr).forEach(cb => { cb.checked = dayCb.checked; });
             updateSelectAllState();
             updateDayFilterState();
         };
     });
-    
+
     meetingCheckboxes.forEach(cb => {
         cb.onchange = () => {
             updateSelectAllState();
             updateDayFilterState();
         };
     });
-    
+
     updateSelectAllState();
     updateDayFilterState();
+}
+
+function openPDFExportModal() {
+    const modal = document.getElementById('pdfExportModal');
+    modal.classList.remove('hidden');
+
+    const timeframeSelect = document.getElementById('pdfTimeframeWeeks');
+    const excludeWeekOne = document.getElementById('pdfExcludeWeekOne');
+    if (timeframeSelect) timeframeSelect.onchange = renderPDFMeetingSelection;
+    if (excludeWeekOne) excludeWeekOne.onchange = renderPDFMeetingSelection;
+
+    renderPDFMeetingSelection();
+    renderPDFDeliverablesSelection();
 }
 
 function closePDFExportModal() {
@@ -7975,11 +8092,16 @@ function closePDFExportModal() {
 function generatePDFExport(btn, previewMode = false) {
     const title = document.getElementById('pdfWeekTitle').value || 'Two-Week Executive Schedule';
     const includePrepMeetings = document.getElementById('pdfPrepMeetings').checked;
+    const compactOnePage = !!document.getElementById('pdfCompactOnePage')?.checked;
+    const timeFrameWeeks = Number(document.getElementById('pdfTimeframeWeeks')?.value || 2);
+    const excludeWeekOne = !!document.getElementById('pdfExcludeWeekOne')?.checked;
+    const includeAllExec1Deliverables = !!document.getElementById('pdfExec1DeliverablesAll')?.checked;
     const notes = document.getElementById('pdfNotes').value.trim();
     const selectedMeetings = Array.from(document.querySelectorAll('.pdf-meeting-checkbox:checked')).map(cb => cb.value);
-    
-    if (selectedMeetings.length === 0) {
-        alert('Please select at least one meeting to export');
+    const selectedDeliverableIds = Array.from(document.querySelectorAll('.pdf-deliverable-checkbox:checked')).map(cb => cb.value);
+
+    if (selectedMeetings.length === 0 && selectedDeliverableIds.length === 0) {
+        alert('Please select at least one meeting or deliverable to export');
         return;
     }
     
@@ -8015,7 +8137,12 @@ function generatePDFExport(btn, previewMode = false) {
                 weekTitle: title,
                 includePrepMeetings: includePrepMeetings,
                 selectedMeetingIds: selectedMeetings,
-                notes: notes
+                notes: notes,
+                compactOnePage: compactOnePage,
+                timeFrameWeeks: timeFrameWeeks,
+                excludeWeekOne: excludeWeekOne,
+                selectedDeliverableIds: selectedDeliverableIds,
+                includeAllExec1Deliverables: includeAllExec1Deliverables
             });
         return;
     }
@@ -8024,79 +8151,119 @@ function generatePDFExport(btn, previewMode = false) {
         try {
             const { jsPDF } = window.jspdf;
             if (!jsPDF) throw new Error('jsPDF is not available');
-            
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            
-            const meetings = dashboardData.meetings
+
+            const pdf = compactOnePage ? new jsPDF('l', 'mm', 'letter') : new jsPDF('p', 'mm', 'a4');
+
+            const meetings = (dashboardData.meetings || [])
                 .filter(m => selectedMeetings.includes(m.id))
                 .sort((a, b) => {
                     const dateCompare = new Date(a.date) - new Date(b.date);
                     if (dateCompare !== 0) return dateCompare;
                     return timeToMinutes(a.time24 || a.time) - timeToMinutes(b.time24 || b.time);
                 });
+
+            const deliverables = (dashboardData.exec1Deliverables || [])
+                .filter(d => d && (includeAllExec1Deliverables || selectedDeliverableIds.includes(d.id)));
+
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const pageHeight = pdf.internal.pageSize.getHeight();
+            const marginX = compactOnePage ? 12 : 20;
+            const contentWidth = pageWidth - (marginX * 2);
+            const maxY = pageHeight - (compactOnePage ? 12 : 20);
+            const titleFont = compactOnePage ? 14 : 18;
+            const headerFont = compactOnePage ? 10 : 13;
+            const bodyFont = compactOnePage ? 8.5 : 10;
+            const lineH = compactOnePage ? 4 : 5;
             
-            pdf.setFontSize(18);
+            pdf.setFontSize(titleFont);
             pdf.setFont(undefined, 'bold');
-            pdf.text(title, 105, 20, { align: 'center' });
+            pdf.text(title, pageWidth / 2, compactOnePage ? 14 : 20, { align: 'center' });
             
-            let yPos = 35;
-            pdf.setFontSize(11);
+            let yPos = compactOnePage ? 22 : 35;
+            pdf.setFontSize(bodyFont);
             pdf.setFont(undefined, 'normal');
-            
+
+            if (deliverables.length) {
+                pdf.setFont(undefined, 'bold');
+                pdf.setFontSize(headerFont);
+                pdf.text("Sarcone's Upcoming Deliverables", marginX, yPos);
+                yPos += compactOnePage ? 5 : 7;
+                pdf.setFont(undefined, 'normal');
+                pdf.setFontSize(bodyFont);
+                deliverables.forEach(d => {
+                    if (yPos > maxY) {
+                        pdf.addPage();
+                        yPos = compactOnePage ? 14 : 20;
+                    }
+                    const dueLabel = d.eta || d.etaFull || 'No ETA';
+                    const line = `${dueLabel} - ${d.description}${d.owner ? ` (${d.owner})` : ''}`;
+                    const lines = pdf.splitTextToSize(line, contentWidth - 5);
+                    pdf.text(lines, marginX, yPos);
+                    yPos += (lines.length * (compactOnePage ? 3.5 : 4)) + (compactOnePage ? 1 : 2);
+                });
+                yPos += compactOnePage ? 3 : 5;
+            }
+
             const meetingsByDate = {};
             meetings.forEach(m => {
                 if (!meetingsByDate[m.date]) meetingsByDate[m.date] = [];
                 meetingsByDate[m.date].push(m);
             });
-            
+
             for (const date in meetingsByDate) {
                 const dateMeetings = meetingsByDate[date];
-                
-                pdf.setFont(undefined, 'bold');
-                pdf.setFontSize(13);
-                pdf.text(dateMeetings[0].dateFormatted || date, 20, yPos);
-                yPos += 8;
-                
-                pdf.setFont(undefined, 'normal');
-                pdf.setFontSize(10);
-                dateMeetings.forEach(m => {
-                    if (yPos > 270) {
-                        pdf.addPage();
-                        yPos = 20;
-                    }
-                    
-                    const timeLabel = formatTimeStandard(m.time) || 'TBD';
-                    const prepLabel = includePrepMeetings && m.prepRequired ? ' • Prep Required' : '';
-                    pdf.text(`${timeLabel} - ${m.title}${prepLabel}`, 25, yPos);
-                    yPos += 5;
-                    
-                    if (m.description) {
-                        pdf.setFontSize(9);
-                        const lines = pdf.splitTextToSize(m.description, 160);
-                        pdf.text(lines, 30, yPos);
-                        yPos += lines.length * 4 + 2;
-                        pdf.setFontSize(10);
-                    }
-                    
-                    yPos += 3;
-                });
-                
-                yPos += 5;
-            }
-            
-            if (notes) {
-                if (yPos > 250) {
+
+                if (yPos > maxY - 10) {
                     pdf.addPage();
-                    yPos = 20;
+                    yPos = compactOnePage ? 14 : 20;
                 }
                 pdf.setFont(undefined, 'bold');
-                pdf.setFontSize(12);
-                pdf.text('Notes & Commentary', 20, yPos);
-                yPos += 6;
+                pdf.setFontSize(headerFont);
+                pdf.text(dateMeetings[0].dateFormatted || date, marginX, yPos);
+                yPos += compactOnePage ? 5 : 8;
+
                 pdf.setFont(undefined, 'normal');
-                pdf.setFontSize(10);
-                const lines = pdf.splitTextToSize(notes, 170);
-                pdf.text(lines, 20, yPos);
+                pdf.setFontSize(bodyFont);
+                dateMeetings.forEach(m => {
+                    if (yPos > maxY) {
+                        pdf.addPage();
+                        yPos = compactOnePage ? 14 : 20;
+                    }
+
+                    const timeLabel = formatTimeStandard(m.time) || 'TBD';
+                    const prepLabel = includePrepMeetings && m.prepRequired ? ' • Prep Required' : '';
+                    const meetingLine = `${timeLabel} - ${m.title}${prepLabel}`;
+                    const lines = pdf.splitTextToSize(meetingLine, contentWidth - 8);
+                    pdf.text(lines, marginX + 4, yPos);
+                    yPos += lines.length * lineH;
+
+                    if (!compactOnePage && m.description) {
+                        pdf.setFontSize(9);
+                        const descLines = pdf.splitTextToSize(m.description, contentWidth - 15);
+                        pdf.text(descLines, marginX + 10, yPos);
+                        yPos += descLines.length * 4 + 2;
+                        pdf.setFontSize(bodyFont);
+                    }
+
+                    yPos += compactOnePage ? 1.5 : 3;
+                });
+
+                yPos += compactOnePage ? 2 : 5;
+            }
+
+            if (notes) {
+                if (yPos > maxY - 12) {
+                    pdf.addPage();
+                    yPos = compactOnePage ? 14 : 20;
+                }
+                pdf.setFont(undefined, 'bold');
+                pdf.setFontSize(compactOnePage ? 10 : 12);
+                pdf.text('Notes & Commentary', marginX, yPos);
+                yPos += compactOnePage ? 5 : 6;
+                pdf.setFont(undefined, 'normal');
+                pdf.setFontSize(bodyFont);
+                const lines = pdf.splitTextToSize(notes, contentWidth);
+                pdf.text(lines, marginX, yPos);
             }
             
             if (previewMode) {

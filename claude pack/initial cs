@@ -76,25 +76,25 @@ const CONFIG = {
   // ✅ You CAN move sections - just update START_ROW values below
   
   EXEC1_START_ROW: 3,          // Mike's/Sarcone's Deliverables (Skipping Title)
-  EXEC1_END_ROW: 13,
+  EXEC1_END_ROW: 20,
   
-  EXEC2_START_ROW: 27,         // DK's Governance Deliverables (Skipping Title)
-  EXEC2_END_ROW: 37,
+  EXEC2_START_ROW: 35,         // DK's Governance Deliverables (Skipping Title)
+  EXEC2_END_ROW: 52,
   
-  ADMIN_START_ROW: 47,         // Admin & Settings Links (Skipping Title)
-  ADMIN_END_ROW: 52,
+  ADMIN_START_ROW: 56,         // Admin & Settings Links (Skipping Title)
+  ADMIN_END_ROW: 70,
   
-  KPI_START_ROW: 57,           // KPIs & Performance (Skipping Title)
-  KPI_END_ROW: 68,
+  KPI_START_ROW: 73,           // KPIs & Performance (Skipping Title)
+  KPI_END_ROW: 92,
   
-  EXEC_UPDATES_START_ROW: 75,  // Executive Updates Archive (Skipping Title)
-  EXEC_UPDATES_END_ROW: 120,
+  EXEC_UPDATES_START_ROW: 95,  // Executive Updates Archive (Skipping Title)
+  EXEC_UPDATES_END_ROW: 178,
   
-  DOCUMENTS_START_ROW: 161,    // Document Repository Section (Skipping Title)
-  DOCUMENTS_END_ROW: 202,
+  DOCUMENTS_START_ROW: 181,    // Document Repository Section (Skipping Title)
+  DOCUMENTS_END_ROW: 2253,
   
-  COMPLETED_START_ROW: 216,    // Completed Items (Skipping Title)
-  COMPLETED_END_ROW: 219,
+  COMPLETED_START_ROW: 256,    // Completed Items (Skipping Title)
+  COMPLETED_END_ROW: 275,
   
   // Alert Banner Settings
   ALERT_SHEET_NAME: 'Alerts',
@@ -2736,42 +2736,73 @@ function addDeliverable(data) {
  */
 function generateWeeklySchedulePDF(options) {
   try {
-    const { selectedMeetingIds, weekTitle, includePrepMeetings, agendaItems, notes } = options;
+    options = options || {};
+    const {
+      selectedMeetingIds,
+      weekTitle,
+      includePrepMeetings,
+      agendaItems,
+      notes,
+      compactOnePage,
+      timeFrameWeeks,
+      excludeWeekOne,
+      selectedDeliverableIds,
+      includeAllExec1Deliverables
+    } = options;
+    const weekCount = Math.max(1, Math.min(4, Number(timeFrameWeeks || 2)));
+    const compact = compactOnePage === true;
+    const skipCurrentWeek = excludeWeekOne === true;
+    const deliverableIds = Array.isArray(selectedDeliverableIds) ? selectedDeliverableIds : [];
     
     // Get all meetings
     const allMeetings = getMeetings();
     
     // Filter to selected meetings only
     let meetings = allMeetings;
-    if (selectedMeetingIds && selectedMeetingIds.length > 0) {
-      meetings = allMeetings.filter(m => selectedMeetingIds.includes(m.id));
+    if (Array.isArray(selectedMeetingIds)) {
+      meetings = selectedMeetingIds.length > 0
+        ? allMeetings.filter(m => selectedMeetingIds.indexOf(m.id) > -1)
+        : [];
     }
     
     // Create a new Google Doc for the PDF
-    const doc = DocumentApp.create('Two-Week Schedule - ' + (weekTitle || new Date().toLocaleDateString()));
+    const doc = DocumentApp.create('Executive Schedule Report - ' + (weekTitle || new Date().toLocaleDateString()));
     const body = doc.getBody();
     
     // Set page to landscape
     body.setPageWidth(792).setPageHeight(612); // Letter landscape
-    body.setMarginTop(36);
-    body.setMarginBottom(36);
-    body.setMarginLeft(36);
-    body.setMarginRight(36);
+    body.setMarginTop(compact ? 24 : 36);
+    body.setMarginBottom(compact ? 24 : 36);
+    body.setMarginLeft(compact ? 24 : 36);
+    body.setMarginRight(compact ? 24 : 36);
     
     // Compute current two-week range (Mon-Fri + next week)
     const scheduleToday = new Date();
     scheduleToday.setHours(0, 0, 0, 0);
     const scheduleDay = scheduleToday.getDay();
     const scheduleMondayOffset = scheduleDay === 0 ? -6 : 1 - scheduleDay;
-    const monday = new Date(scheduleToday);
-    monday.setDate(scheduleToday.getDate() + scheduleMondayOffset);
-    const secondWeekMonday = new Date(monday);
-    secondWeekMonday.setDate(monday.getDate() + 7);
-    const rangeEnd = new Date(secondWeekMonday);
-    rangeEnd.setDate(secondWeekMonday.getDate() + 4);
+    const currentMonday = new Date(scheduleToday);
+    currentMonday.setDate(scheduleToday.getDate() + scheduleMondayOffset);
+    const monday = new Date(currentMonday);
+    if (skipCurrentWeek) monday.setDate(monday.getDate() + 7);
+    const weekStarts = [];
+    for (let w = 0; w < weekCount; w++) {
+      const weekStart = new Date(monday);
+      weekStart.setDate(monday.getDate() + (w * 7));
+      weekStarts.push(weekStart);
+    }
+    const lastWeekMonday = weekStarts[weekStarts.length - 1];
+    const rangeEnd = new Date(lastWeekMonday);
+    rangeEnd.setDate(lastWeekMonday.getDate() + 4);
     const rangeLabel = Utilities.formatDate(monday, Session.getScriptTimeZone(), 'MMMM d') +
       '-' + Utilities.formatDate(rangeEnd, Session.getScriptTimeZone(), 'd, yyyy');
     const generatedLabel = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'MMM d, yyyy');
+
+    const headerTitleSize = compact ? 14 : 16;
+    const metaSize = compact ? 8 : 9;
+    const sectionHeaderSize = compact ? 9 : 10;
+    const bodyFontSize = compact ? 8 : 9;
+    const cellFontSize = compact ? 7 : 8;
 
     // Header row (title left, generated right)
     const headerTable = body.appendTable([['', '']]);
@@ -2783,16 +2814,16 @@ function generateWeeklySchedulePDF(options) {
     generatedCell.setWidth(200);
     
     const titlePara = titleCell.appendParagraph('Executive Calendar Report');
-    titlePara.setFontSize(16);
+    titlePara.setFontSize(headerTitleSize);
     titlePara.setBold(true);
     titlePara.setForegroundColor('#cc0000');
     
     const dateRangePara = titleCell.appendParagraph(rangeLabel);
-    dateRangePara.setFontSize(9);
+    dateRangePara.setFontSize(metaSize);
     dateRangePara.setForegroundColor('#555555');
     
     const generatedPara = generatedCell.appendParagraph('Generated: ' + generatedLabel);
-    generatedPara.setFontSize(8);
+    generatedPara.setFontSize(Math.max(7, metaSize - 1));
     generatedPara.setAlignment(DocumentApp.HorizontalAlignment.RIGHT);
     generatedPara.setForegroundColor('#555555');
     
@@ -2812,10 +2843,10 @@ function generateWeeklySchedulePDF(options) {
     summaryCell.setWidth(600);
     
     const summaryHeader = summaryCell.appendParagraph('EXECUTIVE SUMMARY');
-    summaryHeader.setFontSize(9);
+    summaryHeader.setFontSize(metaSize);
     summaryHeader.setBold(true);
     summaryHeader.setForegroundColor('#cc0000');
-    summaryHeader.setSpacingAfter(6);
+    summaryHeader.setSpacingAfter(compact ? 4 : 6);
     
     const totalMeetings = meetings.length;
     const hotCount = meetings.filter(m => m.isHotTopic).length;
@@ -2825,9 +2856,9 @@ function generateWeeklySchedulePDF(options) {
       ? notes.trim()
       : `Two-week outlook includes ${totalMeetings} meetings, ${hotCount} hot topics, ${prepCount} prep-required sessions, and ${conflictCount} conflicts.`;
     const summaryPara = summaryCell.appendParagraph(summaryText);
-    summaryPara.setFontSize(9);
+    summaryPara.setFontSize(bodyFontSize);
     summaryPara.setForegroundColor('#111111');
-    summaryPara.setSpacingAfter(8);
+    summaryPara.setSpacingAfter(compact ? 5 : 8);
     
     // Group meetings by date
     const meetingsByDate = {};
@@ -2862,43 +2893,46 @@ function generateWeeklySchedulePDF(options) {
     
     const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
-    // Key action items (deliverables due this week for Mike Sarcone)
+    // Key action items (Sarcone deliverables; manually selected or default to report range)
     const actionHeader = body.appendParagraph("☑ Sarcone's Upcoming Deliverables");
-    actionHeader.setFontSize(10);
+    actionHeader.setFontSize(sectionHeaderSize);
     actionHeader.setBold(true);
     actionHeader.setForegroundColor('#cc0000');
-    actionHeader.setSpacingAfter(6);
+    actionHeader.setSpacingAfter(compact ? 4 : 6);
     
     const exec1Deliverables = getExec1Deliverables();
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const weekDay = today.getDay();
-    const mondayOffset = weekDay === 0 ? -6 : 1 - weekDay;
-    const weekStart = new Date(today);
-    weekStart.setDate(today.getDate() + mondayOffset);
-    const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekStart.getDate() + 4);
-    
-    const weekDeliverables = exec1Deliverables.filter(d => {
-      if (!d.etaFull) return false;
-      const due = new Date(d.etaFull + 'T00:00:00');
-      return due >= weekStart && due <= weekEnd;
-    });
+    const reportStart = new Date(monday);
+    reportStart.setHours(0, 0, 0, 0);
+    const reportEnd = new Date(rangeEnd);
+    reportEnd.setHours(23, 59, 59, 999);
+
+    let weekDeliverables = [];
+    if (includeAllExec1Deliverables === true) {
+      weekDeliverables = exec1Deliverables.filter(d => d && d.description);
+    } else if (deliverableIds.length > 0) {
+      weekDeliverables = exec1Deliverables.filter(d => d && deliverableIds.indexOf(d.id) > -1);
+    } else {
+      weekDeliverables = exec1Deliverables.filter(d => {
+        if (!d.etaFull) return false;
+        const due = new Date(d.etaFull + 'T00:00:00');
+        return due >= reportStart && due <= reportEnd;
+      });
+    }
     
     if (weekDeliverables.length === 0) {
-      const none = body.appendParagraph('No deliverables due this week.');
-      none.setFontSize(9);
+      const none = body.appendParagraph('No deliverables selected for this report.');
+      none.setFontSize(bodyFontSize);
       none.setForegroundColor('#666666');
-      none.setSpacingAfter(10);
+      none.setSpacingAfter(compact ? 6 : 10);
     } else {
-      weekDeliverables.sort((a, b) => a.etaFull.localeCompare(b.etaFull));
+      weekDeliverables.sort((a, b) => String(a.etaFull || '').localeCompare(String(b.etaFull || '')));
       weekDeliverables.forEach(d => {
         const dueLabel = d.eta || d.etaFull;
         const ownerLabel = d.owner ? ` (${d.owner})` : '';
         const overdueLabel = d.isOverdue ? ' — OVERDUE' : '';
         const itemText = `${dueLabel} — ${d.description}${ownerLabel}${overdueLabel}`;
         const item = body.appendListItem(itemText);
-        item.setFontSize(9);
+        item.setFontSize(bodyFontSize);
         if (d.linkedMaterials) {
           try {
             item.editAsText().setLinkUrl(0, itemText.length - 1, d.linkedMaterials);
@@ -2907,15 +2941,15 @@ function generateWeeklySchedulePDF(options) {
           }
         }
       });
-      body.appendParagraph('').setSpacingAfter(10);
+      body.appendParagraph('').setSpacingAfter(compact ? 6 : 10);
     }
     
     function appendWeekTable(monday, label) {
       if (label) {
         const labelPara = body.appendParagraph(label);
-        labelPara.setFontSize(9);
+        labelPara.setFontSize(metaSize);
         labelPara.setBold(true);
-        labelPara.setSpacingAfter(6);
+        labelPara.setSpacingAfter(compact ? 4 : 6);
       }
       
       const table = body.appendTable();
@@ -2934,7 +2968,7 @@ function generateWeeklySchedulePDF(options) {
         const headerCell = headerRow.appendTableCell(`${dayName}\n${dateShort}`);
         headerCell.setBackgroundColor('#000000');
         headerCell.getChild(0).asParagraph().setForegroundColor('#ffffff');
-        headerCell.getChild(0).asParagraph().setFontSize(8);
+        headerCell.getChild(0).asParagraph().setFontSize(cellFontSize);
         headerCell.getChild(0).asParagraph().setBold(true);
         headerCell.setWidth(144);
         
@@ -2946,16 +2980,16 @@ function generateWeeklySchedulePDF(options) {
         
         if (dayMeetings.length === 0) {
           const empty = bodyCell.appendParagraph('No meetings');
-          empty.setFontSize(8);
+          empty.setFontSize(cellFontSize);
           empty.setForegroundColor('#999999');
         } else {
           dayMeetings.forEach((m, idx) => {
             const timePara = bodyCell.appendParagraph(m.time || 'TBD');
             timePara.setBold(true);
-            timePara.setFontSize(8);
+            timePara.setFontSize(cellFontSize);
             
             const titlePara = bodyCell.appendParagraph((includePrepMeetings && m.prepRequired ? '[PREP] ' : '') + m.title);
-            titlePara.setFontSize(8);
+            titlePara.setFontSize(cellFontSize);
             
             if (m.hotTopicLevel === 'urgent') {
               titlePara.setForegroundColor('#cc0000');
@@ -2968,11 +3002,11 @@ function generateWeeklySchedulePDF(options) {
             if (m.hasConflict) {
               const conflictPara = bodyCell.appendParagraph('⚠ CONFLICT');
               conflictPara.setForegroundColor('#ff6600');
-              conflictPara.setFontSize(7);
+              conflictPara.setFontSize(Math.max(6, cellFontSize - 1));
               conflictPara.setBold(true);
             }
             
-            if (idx < dayMeetings.length - 1) {
+            if (!compact && idx < dayMeetings.length - 1) {
               bodyCell.appendParagraph('');
             }
           });
@@ -2980,16 +3014,18 @@ function generateWeeklySchedulePDF(options) {
       }
     }
     
-    // Two-week calendar view
-    const calendarHeader = body.appendParagraph('TWO-WEEK CALENDAR VIEW');
-    calendarHeader.setFontSize(10);
+    // Calendar view (variable timeframe)
+    const calendarHeader = body.appendParagraph((weekCount === 1 ? 'ONE-WEEK' : (weekCount + '-WEEK')) + ' CALENDAR VIEW');
+    calendarHeader.setFontSize(sectionHeaderSize);
     calendarHeader.setBold(true);
     calendarHeader.setForegroundColor('#cc0000');
-    calendarHeader.setSpacingAfter(6);
-    
-    appendWeekTable(monday, 'Week 1');
-    body.appendParagraph('');
-    appendWeekTable(secondWeekMonday, 'Week 2');
+    calendarHeader.setSpacingAfter(compact ? 4 : 6);
+
+    weekStarts.forEach(function(weekStart, idx) {
+      const weekLabel = 'Week of ' + Utilities.formatDate(weekStart, Session.getScriptTimeZone(), 'MMM d');
+      appendWeekTable(weekStart, weekLabel);
+      if (idx < weekStarts.length - 1 && !compact) body.appendParagraph('');
+    });
     
     // Add Verizon footer
     body.appendParagraph('');
